@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 AI営業ロープレ | ISAI型</title>
+<style>
+:root{--bg:#0d0f14;--surface:#161920;--surface2:#1e2230;--border:#2a2f40;--accent:#4f6ef7;--accent2:#7c3aed;--green:#22c55e;--red:#ef4444;--gold:#f59e0b;--text:#e2e8f0;--text2:#94a3b8;--radius:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter','Hiragino Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{padding:16px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--surface)}
+header .logo{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+header .meta{display:flex;gap:16px;margin-left:auto;font-size:12px;color:var(--text2);align-items:center}
+header .meta span{display:flex;align-items:center;gap:4px}
+.badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600}
+main{flex:1;display:grid;grid-template-columns:300px 1fr;overflow:hidden}
+@media(max-width:768px){main{grid-template-columns:1fr}.sidebar{position:fixed;left:-320px;top:60px;bottom:0;width:300px;z-index:50;transition:left .3s}.sidebar.open{left:0}.mobile-toggle{display:block!important}}
+.mobile-toggle{display:none;position:fixed;top:70px;left:8px;z-index:51;background:var(--accent);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.sh{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em}
+.config-form{display:flex;flex-direction:column;gap:10px}
+.config-form label{font-size:11px;color:var(--text2);margin-bottom:2px;display:block}
+.config-form input,.config-form select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12px;outline:none}
+.config-form input:focus,.config-form select:focus{border-color:var(--accent)}
+.score-preview{display:flex;flex-direction:column;gap:6px}
+.sb-item{display:flex;align-items:center;gap:6px;font-size:11px}
+.sb-item .n{color:var(--text2);width:75px;flex-shrink:0}
+.sb-item .bg{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.sb-item .fl{height:100%;border-radius:3px;background:var(--accent);transition:width .8s}
+.sb-item .v{color:var(--text);width:24px;text-align:right;font-weight:600}
+.hint-box{background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.25);border-radius:var(--radius);padding:12px}
+.hint-box .ht{font-size:10px;color:var(--accent);font-weight:700;margin-bottom:6px}
+.hint-box .hc{font-size:12px;color:var(--text2);line-height:1.5}
+.chat-area{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;gap:10px;max-width:80%}
+.msg.ai{align-self:flex-start}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.msg.ai .msg-av{background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4)}
+.msg.user .msg-av{background:rgba(79,110,247,.2);border:1px solid rgba(79,110,247,.4)}
+.msg-bb{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.6}
+.msg.ai .msg-bb{background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg.user .msg-bb{background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.25);border-bottom-right-radius:4px}
+.msg-t{font-size:10px;color:var(--text2);margin-top:3px}
+.msg.system{align-self:center;max-width:90%}
+.msg.system .msg-bb{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);color:var(--gold);font-size:12px;text-align:center}
+.controls{padding:14px 20px;border-top:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.status-bar{display:flex;align-items:center;gap:8px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .3s;flex-shrink:0}
+.status-dot.listening{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.5s infinite}
+.status-dot.speaking{background:var(--accent2);box-shadow:0 0 6px var(--accent2);animation:pulse 1s infinite}
+.status-dot.thinking{background:var(--gold);box-shadow:0 0 6px var(--gold);animation:pulse .8s infinite}
+.status-text{font-size:12px;color:var(--text2)}
+.vol-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.vol-fill{height:100%;background:var(--green);border-radius:2px;width:0%;transition:width .05s}
+canvas.waveform{width:100%;height:36px;border-radius:6px;background:var(--surface2)}
+.btn-row{display:flex;gap:10px}
+.btn{padding:10px 18px;border-radius:30px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.btn-start{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;flex:1;justify-content:center;font-size:14px;padding:14px}
+.btn-start:hover{opacity:.85;transform:translateY(-1px);box-shadow:0 6px 20px rgba(79,110,247,.3)}
+.btn-start:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-stop{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;padding:10px 16px}
+.btn-stop:hover{background:rgba(239,68,68,.25)}
+.btn-grade{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#fcd34d}
+.btn-grade:hover{background:rgba(245,158,11,.25)}
+.btn-grade:disabled,.btn-stop:disabled{opacity:.35;cursor:not-allowed}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(4px)}
+.overlay.show{display:flex}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;max-width:580px;width:92%;max-height:85vh;overflow-y:auto}
+.result-score{font-size:52px;font-weight:900;text-align:center;background:linear-gradient(135deg,var(--gold),#f97316);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.result-label{text-align:center;font-size:12px;color:var(--text2);margin-top:2px}
+.result-section{margin-top:16px}
+.result-section h3{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.result-comment{font-size:13px;line-height:1.7;color:var(--text)}
+.btn-close{width:100%;margin-top:20px;background:var(--accent);color:#fff;border:none;padding:12px;border-radius:30px;font-size:14px;font-weight:700;cursor:pointer}
+.btn-close:hover{opacity:.85}
+.history-list{max-height:200px;overflow-y:auto}
+.history-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2)}
+.history-item .hs{color:var(--text);font-weight:600}
+.streak-badge{background:linear-gradient(135deg,#f97316,var(--gold));color:#000;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;display:inline-flex;align-items:center;gap:4px}
+.title-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--gold)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+
+<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<header>
+<span class="logo">🎯 AI営業ロープレ</span>
+<span style="font-size:12px;color:var(--text2);margin-left:6px">Powered by Gemini Live</span>
+<div class="meta">
+  <span id="turnCount">🔄 0往復</span>
+  <span id="sessionTimer">⏱ 00:00</span>
+  <span id="streakBadge"></span>
+  <span id="titleBadge"></span>
+  <button onclick="showUsageDashboard()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:2px 10px;font-size:11px;cursor:pointer">📊 利用状況</button>
+</div>
+</header>
+
+<main>
+<aside class="sidebar">
+  <div class="sh">ロープレ設定</div>
+  <div class="config-form">
+    <div><label>担当者名</label><input type="text" id="salesName" placeholder="例: 高橋"></div>
+    <div><label>克服すべき弱点</label>
+      <select id="weakPoint">
+        <option value="anchoring">アンカリング（価格提示）</option>
+        <option value="authority">権威性（選ぶ側スタンス）</option>
+        <option value="loss_aversion">損失回避（現状リスク指摘）</option>
+        <option value="reframing">リフレーミング（スクール→研修）</option>
+        <option value="closing">クロージング（言い切り誘導）</option>
+        <option value="hearing">ヒアリング（課題の深堀り）</option>
+        <option value="rapport">ラポール（信頼構築）</option>
+        <option value="objection">反論処理（切り返し力）</option>
+        <option value="tempo">テンポ（会話のリズム）</option>
+        <option value="proposal">提案力（解決策の具体性）</option>
+      </select></div>
+    <div><label>商材</label>
+      <select id="product">
+        <option value="ISAI">ISAI（AIマーケタースクール）</option>
+        <option value="Adoafi">Adoafi</option>
+      </select></div>
+    <div><label>顧客ペルソナ</label>
+      <select id="persona">
+        <option value="price">「高い」と言う顧客</option>
+        <option value="compare">「他と比べたい」顧客</option>
+        <option value="busy">「忙しくて時間がない」顧客</option>
+        <option value="spouse">「配偶者に相談したい」顧客</option>
+        <option value="doubt">「本当に効果あるの？」顧客</option>
+        <option value="custom">🔁 実商談トレース（↓ログ貼付）</option>
+      </select></div>
+    <div id="customPersonaBox" style="display:none">
+      <label>📋 失注商談ログを貼り付け</label>
+      <textarea id="customTranscript" rows="6" placeholder="商談の議事録、文字起こし、またはGAS FBツールの総評を貼り付けてください。AIがこの顧客の話し方・思考パターンを再現します。" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px;font-size:11px;resize:vertical"></textarea>
+    </div>
+    <div><label>難易度</label>
+      <select id="difficulty">
+        <option value="easy">🟢 易（乗りやすい顧客）</option>
+        <option value="medium" selected>🟡 中（普通の顧客）</option>
+        <option value="hard">🔴 難（頑固な顧客）</option>
+      </select></div>
+    <div><label>シナリオ</label>
+      <select id="scenario">
+        <option value="full">フル商談（自由会話）</option>
+        <option value="opening">冒頭5分（アイスブレイク→ヒアリング）</option>
+        <option value="price_objection">価格提示後の切り返し</option>
+        <option value="closing_3min">クロージング最後の3分</option>
+      </select></div>
+    <div><label>Gemini API Key</label><input type="password" id="apiKey" placeholder="AIzaSy..."></div>
+    <div><label>モデル</label>
+      <select id="modelName">
+        <option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio (推奨)</option>
+        <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
+        <option value="gemini-2.0-flash-live-001">gemini-2.0-flash-live-001</option>
+      </select></div>
+    <div><label><input type="checkbox" id="saveKey" style="width:auto;margin-right:6px">API Keyを保存する</label></div>
+  </div>
+
+  <div>
+    <div class="sh" style="margin-bottom:8px">スコア推移(10軸)</div>
+    <div class="score-preview" id="scorePreview"></div>
+  </div>
+
+  <div class="hint-box"><div class="ht">🎓 このロープレの目標</div><div class="hc" id="hintText"></div></div>
+
+  <div>
+    <div class="sh" style="margin-bottom:8px">GAS商談FB連携</div>
+    <div class="config-form">
+      <div><label>GAS Web App URL</label><input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/..." style="font-size:10px"></div>
+      <button onclick="fetchLossData()" class="btn" style="background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.25);color:var(--accent);padding:6px 12px;font-size:11px;width:100%">📋 失注データ取得</button>
+      <select id="lossSelect" style="display:none;width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px;font-size:11px"></select>
+    </div>
+  </div>
+
+  <div>
+    <div class="sh" style="margin-bottom:8px">練習履歴</div>
+    <div class="history-list" id="historyList"><span style="font-size:11px;color:var(--text2)">まだ履歴なし</span></div>
+  </div>
+</aside>
+
+<div class="chat-area">
+  <div class="messages" id="messages">
+    <div style="text-align:center;color:var(--text2);font-size:12px;margin-top:40px">設定を確認して「ロープレ開始」を押してください</div>
+  </div>
+  <div class="controls">
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-text" id="statusText">待機中</span>
+      <div class="vol-bar"><div class="vol-fill" id="volFill"></div></div>
+    </div>
+    <canvas class="waveform" id="waveCanvas"></canvas>
+    <div class="btn-row">
+      <button class="btn btn-start" id="btnStart" onclick="startSession()">🎙️ ロープレ開始</button>
+      <button class="btn btn-stop" id="btnStop" onclick="stopSession()" disabled>⏹ 終了</button>
+      <button class="btn btn-grade" id="btnGrade" onclick="gradeSession()" disabled>📊 採点</button>
+    </div>
+  </div>
+</div>
+</main>
+
+<div class="overlay" id="overlay">
+<div class="result-card">
+  <div class="result-score" id="resultScore">--</div>
+  <div class="result-label">ロープレ採点（100点満点）</div>
+  <div class="result-section"><h3>📊 10軸スコア</h3><div id="resultSubScores"></div></div>
+  <div class="result-section"><h3>💬 AIコーチからのフィードバック</h3><div class="result-comment" id="resultComment"></div></div>
+  <div class="result-section" id="idealSection" style="display:none"><h3>✨ 理想のトーク例</h3><div class="result-comment" id="idealResponse"></div></div>
+  <div class="result-section" id="timelineSection" style="display:none"><h3>🕐 タイムライン振り返り</h3><div class="result-comment" id="timelineContent"></div></div>
+  <div class="result-section" id="drillSection" style="display:none"><h3>🎯 弱点ピンポイント練習</h3><div id="drillButtons"></div></div>
+  <button class="btn-close" onclick="closeResult()">閉じる</button>
+</div>
+</div>
+
+<div class="overlay" id="usageOverlay">
+<div class="result-card" style="max-width:700px">
+  <h2 style="text-align:center;margin-bottom:16px">📊 月別利用状況</h2>
+  <div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center">
+    <select id="usageMonth" onchange="renderUsageDashboard()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px"></select>
+    <button onclick="exportUsageCSV()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer">📥 CSV</button>
+  </div>
+  <div id="usageTable"></div>
+  <button class="btn-close" onclick="document.getElementById('usageOverlay').classList.remove('show')">閉じる</button>
+</div>
+</div>
+
+<script>
+// === CONFIG ===
+const HINTS={
+  anchoring:'「値段が高い」と言われた瞬間が勝負。費用を「投資」「採用費換算」「月割り」に変換。「覚悟のフィルター」として定義することが鍵。',
+  authority:'「選ぶ側」のスタンスを崩さない。顧客の質問に即答せず「なぜその質問をするか」を返す。',
+  loss_aversion:'「3年後の自分の姿を想像してください」「同い年の人がどこにいるか」で現状リスクを突く。',
+  reframing:'「スクール」「学校」を「社内研修」「マーケティング室の立ち上げ」に変換。顧客がその言葉を使い始めたら成功。',
+  closing:'「手続き進めます」と言い切る練習。「では〜ということでよいですか？」→「では手続きに移りましょう」と主語を変える。',
+  hearing:'「なぜそう思いますか？」「他に困っていることは？」で顧客の本音を引き出す。表面的な回答で終わらせない。',
+  rapport:'最初の90秒で共感ポイントを見つける。相手の名前を呼ぶ、共通点を見つける、相手の言葉をオウム返しする。',
+  objection:'反論は買いたいサイン。「ということは〜が解決すれば前向きですか？」と条件付きYesに持ち込む。',
+  tempo:'沈黙を怖がらない。質問した後3秒待つ。矢継ぎ早に話さず、相手に考える間を与える。',
+  proposal:'抽象的なメリットではなく「御社の場合〜」と具体的な活用イメージを描く。数字で示す。'
+};
+const PERSONAS={
+  price:{jp:'「高い」と言う顧客',intro:'ちょっと…正直、値段がちょっと気になってて。'},
+  compare:{jp:'比較検討する顧客',intro:'他にも似たようなスクールあるじゃないですか？そっちと比べたくて。'},
+  busy:{jp:'「忙しい」顧客',intro:'興味はあるんですけど、正直今すごく忙しくて、時間が取れるかどうか…'},
+  spouse:{jp:'「配偶者相談」顧客',intro:'いいとは思うんですけど、一応妻にも相談してからじゃないとちょっと…'},
+  doubt:{jp:'「効果あるの？」顧客',intro:'AIマーケティングって結局どのくらい実際に使えるんですか？'},
+  custom:{jp:'実商談トレース顧客',intro:'（ログから自動生成）'}
+};
+const DIFFICULTY={easy:'あなたは比較的乗りやすい顧客です。良い提案にはすぐ前のめりに反応します。しかし最低限の質問はします。',medium:'あなたはリアルな顧客です。簡単には乗らないが、上手いリフレーミングには反応します。',hard:'あなたは非常に頑固な顧客です。何を言われても簡単には納得しません。論理的に完璧な説明だけに少し心が動きます。常に反論を探します。'};
+const SCENARIOS={full:'自由に会話してください。',opening:'商談の冒頭5分を想定。自己紹介→ヒアリング→課題の深堀りまで。まだ商品提案はしないフェーズ。',price_objection:'すでに商品説明は終わっている。価格を聞いて「高い」と反応した直後から会話を始めてください。',closing_3min:'商談の終盤。顧客は興味はあるが決断を迷っている状態。ここから3分でクロージングまで持っていく練習。'};
+const SUB_NAMES={authority:'権威性',loss_aversion:'損失回避',reframing:'リフレーミング',anchoring:'アンカー',closing:'クロージング',hearing:'ヒアリング',rapport:'ラポール',objection:'反論処理',tempo:'テンポ',proposal:'提案力'};
+const ALL_SUBS = Object.keys(SUB_NAMES);
+
+let ws=null,audioContext=null,processor=null,mediaStream=null,sessionActive=false;
+let conversationLog=[],timerInterval=null,startTime=null,volumeAnimFrame=null,analyserNode=null;
+let turnCount=0,playbackCtx=null,audioQueue=[],currentSource=null,silenceTimer=null;
+let mediaRecorder=null,recordedChunks=[];
+let waveCtx=null,waveData=null;
+
+// === INIT ===
+document.getElementById('weakPoint').addEventListener('change',updateHint);
+document.getElementById('persona').addEventListener('change',()=>{
+  document.getElementById('customPersonaBox').style.display = document.getElementById('persona').value==='custom'?'block':'none';
+});
+updateHint();
+initScoreBars();
+loadApiKey();
+loadHistory();
+updateStreak();
+
+function initScoreBars(){
+  const el=document.getElementById('scorePreview');el.innerHTML='';
+  ALL_SUBS.forEach(k=>{
+    el.innerHTML+=`<div class="sb-item"><div class="n">${SUB_NAMES[k]}</div><div class="bg"><div class="fl" id="bar_${k}" style="width:50%"></div></div><div class="v" id="val_${k}">-</div></div>`;
+  });
+}
+
+function updateHint(){document.getElementById('hintText').textContent=HINTS[document.getElementById('weakPoint').value]||''}
+function loadApiKey(){const k=localStorage.getItem('rp_apikey');if(k){document.getElementById('apiKey').value=k;document.getElementById('saveKey').checked=true}}
+function saveApiKey(){if(document.getElementById('saveKey').checked)localStorage.setItem('rp_apikey',document.getElementById('apiKey').value);else localStorage.removeItem('rp_apikey')}
+
+// === STATUS ===
+function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+(s||'');document.getElementById('statusText').textContent=t}
+function updateTurnCount(){document.getElementById('turnCount').textContent='🔄 '+turnCount+'往復'}
+
+// === MESSAGES ===
+function addMsg(role,text){
+  const d=document.createElement('div');
+  d.className='msg '+(role==='ai'?'ai':role==='system'?'system':'user');
+  const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if(role==='system'){d.innerHTML=`<div class="msg-bb">${text}</div>`}
+  else{d.innerHTML=`<div class="msg-av">${role==='ai'?'👤':'🧑‍💼'}</div><div><div class="msg-bb">${text.replace(/\n/g,'<br>')}</div><div class="msg-t">${role==='ai'?'顧客(AI)':'営業'} · ${t}</div></div>`}
+  conversationLog.push({role:role==='ai'?'顧客':'営業',text,time:t,ts:Date.now()});
+  const m=document.getElementById('messages');m.appendChild(d);m.scrollTop=m.scrollHeight;
+  if(role==='user')turnCount++;
+  updateTurnCount();
+}
+function clearMsgs(){document.getElementById('messages').innerHTML='';conversationLog=[];turnCount=0;updateTurnCount()}
+
+// === TIMER ===
+function startTimer(){startTime=Date.now();timerInterval=setInterval(()=>{const s=Math.floor((Date.now()-startTime)/1000);document.getElementById('sessionTimer').textContent='⏱ '+String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000)}
+
+// === WAVEFORM ===
+function initWave(){const c=document.getElementById('waveCanvas');waveCtx=c.getContext('2d');c.width=c.offsetWidth*2;c.height=72;waveData=new Uint8Array(128)}
+function drawWave(){if(!sessionActive||!waveCtx)return;if(analyserNode){analyserNode.getByteTimeDomainData(waveData)}
+const w=waveCtx.canvas.width,h=waveCtx.canvas.height;waveCtx.fillStyle='#1e2230';waveCtx.fillRect(0,0,w,h);
+waveCtx.lineWidth=2;waveCtx.strokeStyle='#4f6ef7';waveCtx.beginPath();
+const sl=w/waveData.length;let x=0;
+for(let i=0;i<waveData.length;i++){const v=waveData[i]/128;const y=v*h/2;if(i===0)waveCtx.moveTo(x,y);else waveCtx.lineTo(x,y);x+=sl}
+waveCtx.stroke();requestAnimationFrame(drawWave)}
+
+// === SILENCE HINT ===
+function resetSilenceTimer(){
+  clearTimeout(silenceTimer);
+  silenceTimer=setTimeout(()=>{
+    if(!sessionActive)return;
+    const wp=document.getElementById('weakPoint').value;
+    const hints={anchoring:'💡 「それは投資です」と言い換えてみましょう',authority:'💡 「なぜそう思いますか？」と返してみましょう',loss_aversion:'💡 「3年後の自分を想像してみてください」',reframing:'💡 「スクールではなく社内研修です」と定義し直しましょう',closing:'💡 「では手続きに移りましょう」と言い切ってみましょう'};
+    addMsg('system',hints[wp]||'💡 何か話しかけてみましょう');
+  },15000);
+}
+
+// === GEMINI LIVE API ===
+async function startSession(){
+  const apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey){alert('API Keyを入力してください');return}
+  saveApiKey();
+  clearMsgs();initWave();
+  document.getElementById('btnStart').disabled=true;
+  document.getElementById('btnStop').disabled=false;
+  document.getElementById('btnGrade').disabled=true;
+  setStatus('thinking','接続中...');
+
+  const persona=PERSONAS[document.getElementById('persona').value];
+  const product=document.getElementById('product').value;
+  const weakPoint=document.getElementById('weakPoint').value;
+  const salesName=document.getElementById('salesName').value||'営業担当';
+  const diff=DIFFICULTY[document.getElementById('difficulty').value];
+  const scn=SCENARIOS[document.getElementById('scenario').value];
+  const isCustom = document.getElementById('persona').value==='custom';
+  const customLog = isCustom ? document.getElementById('customTranscript').value.trim() : '';
+
+  let systemPrompt;
+  if(isCustom && customLog){
+    systemPrompt=`あなたは日本人の顧客役です。必ず日本語だけで話してください。英語は絶対に使わないでください。
+
+以下は実際の商談で失注した顧客の会話ログです。この顧客の話し方、思考パターン、反論の仕方、口癖をトレースして、同じタイプの顧客として振る舞ってください。
+
+【実商談ログ】
+${customLog.substring(0,3000)}
+
+【ルール】
+- 上記ログの顧客の話し方・性格・反論パターンを再現する
+- 必ず日本語のみ。英語禁止。
+- 1回の発言は短く（1〜2文）
+- ${diff}
+- ${scn}
+- メタ的な説明は不要。顧客として直接会話する。
+
+この顧客になりきって、最初の発言をしてください。`;
+  } else {
+    systemPrompt=`あなたは日本人の顧客役です。必ず日本語だけで話してください。英語は絶対に使わないでください。
+
+あなたは「${persona.jp}」として、${product}の営業担当「${salesName}さん」と音声で会話する顧客です。
+
+【役柄】
+- 日本人の30代会社員
+- 最初の発言: 「${persona.intro}」
+- ${diff}
+
+【ルール】
+- 必ず日本語のみで話す。英語禁止。
+- 営業の弱点（${weakPoint}）を突く反応をする
+- 1回の発言は短く（1〜2文）
+- 「あー」「うんうん」「なるほど」と自然に相槌
+- ${scn}
+- メタ的な説明は不要。顧客として直接会話する。
+
+最初のセリフ「${persona.intro}」を日本語で話し始めてください。`;
+  }
+
+  const MODEL=document.getElementById('modelName').value;
+  const wsUrl=`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+
+  try{
+    ws=new WebSocket(wsUrl);
+    addMsg('system','🔌 接続中... (モデル: '+MODEL+')');
+    const connectTimeout=setTimeout(()=>{
+      if(!sessionActive){setStatus('','接続タイムアウト。別のモデルを試してください');resetUI();if(ws)ws.close()}
+    },10000);
+
+    ws.onopen=()=>{
+      const setupPayload = {
+        setup:{
+          model:`models/${MODEL}`,
+          generation_config:{
+            response_modalities:['AUDIO'],
+            speech_config:{
+              voice_config:{
+                prebuilt_voice_config:{voice_name:'Puck'}
+              },
+              language_code:'ja-JP'
+            }
+          },
+          system_instruction:{
+            parts:[{text:systemPrompt}]
+          }
+        }
+      };
+      console.log('Setup:', JSON.stringify(setupPayload).substring(0,400));
+      ws.send(JSON.stringify(setupPayload));
+    };
+
+    ws.onmessage=async(e)=>{
+      const raw = typeof e.data==='string'?e.data:await e.data.text();
+      const data=JSON.parse(raw);
+      console.log('WS received:', raw.substring(0,500));
+
+      if(data.setupComplete){
+        clearTimeout(connectTimeout);
+        setStatus('listening','ロープレ開始！顧客が話しかけます...');
+        sessionActive=true;startTimer();startRecording();
+        addMsg('system','✅ 接続成功 ('+MODEL+')');
+        ws.send(JSON.stringify({client_content:{turns:[{role:'user',parts:[{text:'会話を始めてください'}]}],turn_complete:true}}));
+        await startMicrophone();
+        drawWave();resetSilenceTimer();
+        return;
+      }
+
+      if(data.serverContent?.modelTurn?.parts){
+        let hasAudio = false;
+        for(const p of data.serverContent.modelTurn.parts){
+          if(p.inlineData?.mimeType?.startsWith('audio/')){playAudioChunk(p.inlineData.data);hasAudio=true;}
+          // Skip p.text — native audio model outputs internal reasoning in English, not dialogue
+        }
+        if(hasAudio) setStatus('speaking','AI顧客が話しています...');
+      }
+
+      // output transcript (AI's speech as text) — if available
+      if(data.serverContent?.outputTranscript?.text){addMsg('ai',data.serverContent.outputTranscript.text)}
+      // input transcript (user's speech as text) — if available
+      if(data.serverContent?.inputTranscript?.text){addMsg('user',data.serverContent.inputTranscript.text);resetSilenceTimer()}
+      else if(typeof data.serverContent?.inputTranscript === 'string' && data.serverContent.inputTranscript){addMsg('user',data.serverContent.inputTranscript);resetSilenceTimer()}
+      if(data.serverContent?.interrupted){clearAudioQueue();setStatus('listening','割り込み検知 — 続けてどうぞ')}
+      if(data.serverContent?.turnComplete){
+        setStatus('listening','あなたの番です');resetSilenceTimer();
+        // Log AI turn marker for grading (audio was played)
+        conversationLog.push({role:'顧客',text:'(音声発言)',time:new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),ts:Date.now()});
+      }
+
+      if(data.error){
+        console.error('Gemini Error:',data.error);
+        setStatus('','エラー: '+(data.error.message||JSON.stringify(data.error)));
+        addMsg('system','❌ '+JSON.stringify(data.error));
+        resetUI();
+      }
+    };
+
+    ws.onerror=(e)=>{console.error('WS Error',e);clearTimeout(connectTimeout);setStatus('','接続エラー。別のモデルを選んで再試行してください');addMsg('system','❌ WebSocket接続エラー。モデルを変更してみてください');resetUI()};
+    ws.onclose=(e)=>{clearTimeout(connectTimeout);if(sessionActive){setStatus('','セッション終了');sessionActive=false}else if(document.getElementById('btnStart').disabled){setStatus('','接続失敗 (code:'+e.code+'). モデルを変更して再試行してください');addMsg('system','❌ code:'+e.code+' — 別のモデルを試すか、API Keyを確認してください');resetUI()}};
+  }catch(err){alert('接続失敗: '+err.message);resetUI()}
+}
+
+function resetUI(){document.getElementById('btnStart').disabled=false;document.getElementById('btnStop').disabled=true;document.getElementById('btnGrade').disabled=conversationLog.length<2?true:false}
+
+// === MIC ===
+async function startMicrophone(){
+  try{
+    mediaStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    audioContext=new AudioContext({sampleRate:16000});
+    await audioContext.audioWorklet.addModule('data:application/javascript,'+encodeURIComponent(WORKLET_CODE));
+    const src=audioContext.createMediaStreamSource(mediaStream);
+    analyserNode=audioContext.createAnalyser();analyserNode.fftSize=256;
+    src.connect(analyserNode);
+    processor=new AudioWorkletNode(audioContext,'pcm-processor');
+    src.connect(processor);
+    processor.port.onmessage=(e)=>{if(!ws||ws.readyState!==1||!sessionActive)return;ws.send(JSON.stringify({realtime_input:{media_chunks:[{mime_type:'audio/pcm;rate=16000',data:ab2b64(e.data)}]}}))};
+    processor.connect(audioContext.destination);
+    startVolMon();
+  }catch(err){addMsg('system','⚠️ マイクアクセスに失敗: '+err.message)}
+}
+const WORKLET_CODE=`class PcmProcessor extends AudioWorkletProcessor{constructor(){super();this._b=new Int16Array(1024);this._p=0}process(i){const d=i[0]?.[0];if(!d)return true;for(let j=0;j<d.length;j++){this._b[this._p++]=Math.max(-32768,Math.min(32767,d[j]*32768));if(this._p>=this._b.length){this.port.postMessage(this._b.buffer.slice(0));this._p=0}}return true}}registerProcessor('pcm-processor',PcmProcessor);`;
+
+function ab2b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.byteLength;i++)s+=String.fromCharCode(b[i]);return btoa(s)}
+function startVolMon(){const vf=document.getElementById('volFill');const d=new Uint8Array(analyserNode.frequencyBinCount);(function tick(){if(!sessionActive)return;analyserNode.getByteFrequencyData(d);vf.style.width=Math.min(100,d.reduce((a,b)=>a+b,0)/d.length*2)+'%';volumeAnimFrame=requestAnimationFrame(tick)})()}
+
+// === PLAYBACK ===
+function getPlayCtx(){
+  if(!playbackCtx || playbackCtx.state==='closed'){
+    playbackCtx = new AudioContext({sampleRate:24000});
+  }
+  return playbackCtx;
+}
+function clearAudioQueue(){audioQueue=[];if(currentSource){try{currentSource.stop()}catch(e){}currentSource=null}}
+
+// Accumulate audio chunks into one larger buffer before playback to prevent audio crackling
+let pendingChunks = [];
+let flushTimer = null;
+
+function playAudioChunk(b64){
+  const raw=atob(b64);const bytes=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+  const pcm=new Int16Array(bytes.buffer);const f32=new Float32Array(pcm.length);
+  for(let i=0;i<pcm.length;i++)f32[i]=pcm[i]/32768;
+  pendingChunks.push(f32);
+  // Flush after small delay to batch chunks together
+  clearTimeout(flushTimer);
+  flushTimer = setTimeout(flushPendingAudio, 80);
+}
+
+function flushPendingAudio(){
+  if(!pendingChunks.length) return;
+  const ctx = getPlayCtx();
+  // Merge all pending chunks into one buffer
+  const totalLen = pendingChunks.reduce((sum,c)=>sum+c.length, 0);
+  const merged = new Float32Array(totalLen);
+  let offset = 0;
+  for(const c of pendingChunks){merged.set(c, offset);offset+=c.length;}
+  pendingChunks = [];
+  const buf = ctx.createBuffer(1, merged.length, 24000);
+  buf.getChannelData(0).set(merged);
+  audioQueue.push(buf);
+  if(!currentSource) drainQ(ctx);
+}
+
+function drainQ(ctx){
+  if(!audioQueue.length){currentSource=null;return;}
+  const buf=audioQueue.shift();
+  const s=ctx.createBufferSource();
+  s.buffer=buf;
+  s.connect(ctx.destination);
+  currentSource=s;
+  s.onended=()=>{currentSource=null;drainQ(ctx);};
+  s.start();
+}
+
+// === RECORDING ===
+function startRecording(){
+  try{
+    const dest=new AudioContext();const osc=dest.createOscillator();
+    const combined=dest.createMediaStreamDestination();
+    mediaRecorder=new MediaRecorder(combined.stream,{mimeType:'audio/webm'});
+    recordedChunks=[];
+    mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recordedChunks.push(e.data)};
+    mediaRecorder.start(1000);
+  }catch(e){console.warn('Recording not supported:',e)}
+}
+function stopRecording(){if(mediaRecorder&&mediaRecorder.state!=='inactive'){mediaRecorder.stop()}}
+
+// === STOP ===
+function stopSession(){
+  sessionActive=false;clearTimeout(silenceTimer);
+  if(volumeAnimFrame)cancelAnimationFrame(volumeAnimFrame);
+  if(processor){processor.disconnect();processor=null}
+  if(audioContext){audioContext.close();audioContext=null}
+  if(playbackCtx){clearAudioQueue();playbackCtx.close();playbackCtx=null}
+  if(mediaStream){mediaStream.getTracks().forEach(t=>t.stop());mediaStream=null}
+  if(ws){ws.close();ws=null}
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null}
+  stopRecording();
+  document.getElementById('volFill').style.width='0%';
+  document.getElementById('btnStart').disabled=false;
+  document.getElementById('btnStop').disabled=true;
+  document.getElementById('btnGrade').disabled=conversationLog.length<2;
+  setStatus('',conversationLog.length>=2?'終了。「採点」を押してください':'終了');
+}
+
+// === GRADING (STRICT) ===
+async function gradeSession(){
+  const apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey)return;
+  document.getElementById('btnGrade').disabled=true;
+  document.getElementById('btnGrade').textContent='⏳ 採点中...';
+  const logText=conversationLog.filter(m=>m.role!=='system').map(m=>`【${m.role}】${m.text}`).join('\n');
+  const wp=document.getElementById('weakPoint').value;
+
+  const prompt=`あなたはISAI型クロージング商談のAIコーチです。以下のロープレ会話を厳密に採点してください。
+同じ会話ログを何度採点しても同じ点数になるよう、以下のルブリックに従ってください。
+
+# ロープレ会話ログ
+${logText}
+
+# 採点ルブリック（各10点満点、合計100点）
+各軸の採点基準:
+- 0-2点: 該当する行動が全くない。試みすら見られない。
+- 3-4点: 試みはあるが不十分または逆効果。顧客に響いていない。
+- 5-6点: 基本はできているが深みがない。台本通りの基準点。
+- 7-8点: 効果的に実行。顧客の反応を引き出せている。
+- 9-10点: 卓越。顧客の感情が明確に動いた証拠あり。
+
+## 10軸の評価基準
+1. 権威性: 「選ぶ側」のスタンス維持。相手からの敬意を得ているか。
+2. 損失回避: 現状維持のリスクを具体的に指摘。相手が焦りや危機感を感じたか。
+3. リフレーミング: 「スクール」を「社内研修」等に定義変更。顧客が新しい定義を受入れたか。
+4. アンカリング: 費用を「覚悟のフィルター」「投資」と定義し安く感じさせたか。
+5. クロージング: 「手続き進めます」と言い切り、相手を誘導できたか。
+6. ヒアリング: 顧客の課題・ニーズを的確に引き出せたか。深堀り質問ができたか。
+7. ラポール: 信頼関係構築。共感・オウム返し・名前呼びがあったか。
+8. 反論処理: 反論を受け止め、条件付きYesに持ち込めたか。
+9. テンポ: 沈黙の活用、矢継ぎ早にならず間を取れたか。
+10. 提案力: 抽象論でなく具体的な活用イメージを描けたか。
+
+# 重点チェック: 弱点「${wp}」に特に厳しく
+
+# 出力ルール
+- 各軸には必ずevidence（根拠となる発言の引用）とdeduction（減点理由）を付ける
+- 同じログなら何度採点しても同じ点数になるよう、ルブリックに忠実な客観的採点をする
+
+# 出力(JSON)
+{
+  "total":合計点数値,
+  "sub":{
+    "authority":{"score":数値,"evidence":"根拠発言","deduction":"減点理由"},
+    "loss_aversion":{"score":数値,"evidence":"","deduction":""},
+    "reframing":{"score":数値,"evidence":"","deduction":""},
+    "anchoring":{"score":数値,"evidence":"","deduction":""},
+    "closing":{"score":数値,"evidence":"","deduction":""},
+    "hearing":{"score":数値,"evidence":"","deduction":""},
+    "rapport":{"score":数値,"evidence":"","deduction":""},
+    "objection":{"score":数値,"evidence":"","deduction":""},
+    "tempo":{"score":数値,"evidence":"","deduction":""},
+    "proposal":{"score":数値,"evidence":"","deduction":""}
+  },
+  "feedback":"辛口だが建設的な総評(200字)",
+  "best_moment":"一番良かった瞬間",
+  "ideal":"弱点シーンでの理想トーク例",
+  "timeline":[{"time":"秒数","event":"何が起きたか","evaluation":"良い/悪い/普通","comment":"一言"}]
+}`;
+
+  try{
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0}})
+    });
+    const json=await res.json();
+    let raw=json.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
+    raw=raw.replace(/```json/g,'').replace(/```/g,'').trim();
+    const result=JSON.parse(raw);
+    // Normalize sub scores
+    if(result.sub){
+      const norm={};
+      Object.entries(result.sub).forEach(([k,v])=>{
+        norm[k]=typeof v==='object'?v:{score:v,evidence:'',deduction:''};
+      });
+      result.sub=norm;
+    }
+    showResult(result);
+    saveHistory(result);
+    saveUsage(result);
+  }catch(e){alert('採点エラー: '+e.message)}
+  document.getElementById('btnGrade').disabled=false;
+  document.getElementById('btnGrade').textContent='📊 採点';
+}
+
+function showResult(r){
+  document.getElementById('resultScore').textContent=r.total+'点';
+  const sub=Object.entries(r.sub||{}).map(([k,v])=>{
+    const sc=typeof v==='object'?v.score:v;
+    const ev=typeof v==='object'?v.evidence:'';
+    const ded=typeof v==='object'?v.deduction:'';
+    return `<div style="margin-bottom:10px">
+      <div class="sb-item"><div class="n">${SUB_NAMES[k]||k}</div><div class="bg"><div class="fl" style="width:${(sc/10)*100}%;background:${sc<5?'var(--red)':sc<7?'var(--gold)':'var(--green)'}"></div></div><div class="v">${sc}</div>
+      <button onclick="drillWeakPoint('${k}')" style="background:none;border:1px solid var(--accent);color:var(--accent);border-radius:12px;padding:1px 8px;font-size:10px;cursor:pointer;margin-left:4px" title="この弱点で練習">🎯</button></div>
+      ${ev?`<div style="font-size:10px;color:var(--green);padding-left:80px;margin-top:2px">✅ ${ev}</div>`:''}
+      ${ded?`<div style="font-size:10px;color:var(--red);padding-left:80px">❌ ${ded}</div>`:''}
+    </div>`;
+  }).join('');
+  document.getElementById('resultSubScores').innerHTML=sub;
+  document.getElementById('resultComment').innerHTML=`<p>${r.feedback||''}</p>`+(r.best_moment?`<p style="margin-top:10px;color:var(--green)">✅ ${r.best_moment}</p>`:'');
+  if(r.ideal){document.getElementById('idealSection').style.display='block';document.getElementById('idealResponse').textContent=r.ideal}
+  if(r.timeline?.length){
+    document.getElementById('timelineSection').style.display='block';
+    document.getElementById('timelineContent').innerHTML=r.timeline.map(t=>`<div style="margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:8px;font-size:12px"><span style="color:${t.evaluation==='良い'?'var(--green)':t.evaluation==='悪い'?'var(--red)':'var(--text2)'}">${t.evaluation==='良い'?'✅':t.evaluation==='悪い'?'❌':'➖'}</span> <b>${t.event}</b><br><span style="color:var(--text2)">${t.comment}</span></div>`).join('');
+  }
+  // Drill: worst 3
+  if(r.sub){
+    const sorted=Object.entries(r.sub).map(([k,v])=>[k,typeof v==='object'?v.score:v]).sort((a,b)=>a[1]-b[1]);
+    const worst3=sorted.slice(0,3);
+    document.getElementById('drillSection').style.display='block';
+    document.getElementById('drillButtons').innerHTML=worst3.map(([k,sc])=>
+      `<button onclick="drillWeakPoint('${k}')" style="display:block;width:100%;margin-bottom:6px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;text-align:left">🎯 ${SUB_NAMES[k]} (${sc}点) でピンポイント練習</button>`
+    ).join('');
+    document.getElementById('weakPoint').value=worst3[0][0];updateHint();
+  }
+  document.getElementById('overlay').classList.add('show');
+  updateTitle(r.total);
+}
+
+function drillWeakPoint(key){
+  closeResult();
+  document.getElementById('weakPoint').value=key;updateHint();
+  const map={anchoring:'price_objection',closing:'closing_3min',hearing:'opening',rapport:'opening'};
+  if(map[key])document.getElementById('scenario').value=map[key];
+  document.querySelector('.chat-area').scrollIntoView({behavior:'smooth'});
+  const btn=document.getElementById('btnStart');
+  btn.style.animation='pulse 0.5s 3';setTimeout(()=>btn.style.animation='',2000);
+}
+
+function closeResult(){
+  document.getElementById('overlay').classList.remove('show');
+  ['idealSection','timelineSection','drillSection'].forEach(id=>document.getElementById(id).style.display='none');
+}
+
+// === HISTORY ===
+function saveHistory(r){
+  const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
+  const subScores={};
+  if(r.sub) Object.entries(r.sub).forEach(([k,v])=>subScores[k]=typeof v==='object'?v.score:v);
+  h.unshift({date:new Date().toLocaleDateString('ja-JP'),score:r.total,sub:subScores,wp:document.getElementById('weakPoint').value,name:document.getElementById('salesName').value||'?'});
+  if(h.length>50)h.length=50;
+  localStorage.setItem('rp_history',JSON.stringify(h));
+  loadHistory();updateStreak();
+}
+function loadHistory(){
+  const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
+  const el=document.getElementById('historyList');
+  if(!h.length){el.innerHTML='<span style="font-size:11px;color:var(--text2)">まだ履歴なし</span>';return}
+  el.innerHTML=h.slice(0,10).map(i=>`<div class="history-item"><span>${i.date} ${i.name}</span><span class="hs">${i.score}点</span></div>`).join('');
+  if(h.length&&h[0].sub){
+    Object.entries(h[0].sub).forEach(([k,v])=>{
+      const bar=document.getElementById('bar_'+k);
+      const val=document.getElementById('val_'+k);
+      if(bar&&val){bar.style.width=(v/10*100)+'%';val.textContent=v;}
+    });
+  }
+}
+
+// === USAGE TRACKING ===
+function saveUsage(r){
+  const usage=JSON.parse(localStorage.getItem('rp_usage')||'[]');
+  const dur=startTime?Math.floor((Date.now()-startTime)/1000):0;
+  const subScores={};
+  if(r.sub) Object.entries(r.sub).forEach(([k,v])=>subScores[k]=typeof v==='object'?v.score:v);
+  usage.push({
+    name:document.getElementById('salesName').value||'未設定',
+    date:new Date().toISOString(),
+    month:new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit'}),
+    score:r.total, sub:subScores,
+    duration:dur,
+    scenario:document.getElementById('scenario').value,
+    weakPoint:document.getElementById('weakPoint').value
+  });
+  localStorage.setItem('rp_usage',JSON.stringify(usage));
+}
+
+function showUsageDashboard(){
+  const usage=JSON.parse(localStorage.getItem('rp_usage')||'[]');
+  const months=[...new Set(usage.map(u=>u.month))].sort().reverse();
+  const sel=document.getElementById('usageMonth');
+  const cur=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit'});
+  if(!months.length)months.push(cur);
+  sel.innerHTML=months.map(m=>`<option>${m}</option>`).join('');
+  renderUsageDashboard();
+  document.getElementById('usageOverlay').classList.add('show');
+}
+
+function renderUsageDashboard(){
+  const usage=JSON.parse(localStorage.getItem('rp_usage')||'[]');
+  const month=document.getElementById('usageMonth').value;
+  const filtered=usage.filter(u=>u.month===month);
+  const byName={};
+  filtered.forEach(u=>{
+    if(!byName[u.name])byName[u.name]={count:0,totalScore:0,totalDur:0,lastDate:''};
+    byName[u.name].count++;
+    byName[u.name].totalScore+=u.score||0;
+    byName[u.name].totalDur+=u.duration||0;
+    byName[u.name].lastDate=u.date?.split('T')[0]||'';
+  });
+  let html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html+='<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px">担当者</th><th>回数</th><th>平均点</th><th>合計時間</th><th>最終</th></tr>';
+  Object.entries(byName).sort((a,b)=>b[1].count-a[1].count).forEach(([name,d])=>{
+    const avg=d.count?(d.totalScore/d.count).toFixed(1):'--';
+    const mins=Math.floor(d.totalDur/60);
+    html+=`<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px;font-weight:600">${name}</td><td style="text-align:center">${d.count}回</td><td style="text-align:center;color:${avg>=70?'var(--green)':avg>=50?'var(--gold)':'var(--red)'}">${avg}</td><td style="text-align:center">${mins}分</td><td style="text-align:center;font-size:10px">${d.lastDate}</td></tr>`;
+  });
+  if(!Object.keys(byName).length)html+='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text2)">まだデータなし</td></tr>';
+  html+='</table>';
+  document.getElementById('usageTable').innerHTML=html;
+}
+
+function exportUsageCSV(){
+  const usage=JSON.parse(localStorage.getItem('rp_usage')||'[]');
+  const month=document.getElementById('usageMonth').value;
+  const filtered=usage.filter(u=>u.month===month);
+  let csv='担当者,日時,スコア,時間(秒),シナリオ,弱点\n';
+  filtered.forEach(u=>csv+=`${u.name},${u.date},${u.score},${u.duration},${u.scenario},${u.weakPoint}\n`);
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`roleplay_usage_${month}.csv`;a.click();
+}
+
+// === GAS INTEGRATION ===
+async function fetchLossData(){
+  const url=document.getElementById('gasUrl').value.trim();
+  if(!url){alert('GAS Web App URLを入力してください');return}
+  localStorage.setItem('rp_gasUrl',url);
+  try{
+    const res=await fetch(url);
+    const data=await res.json();
+    const sel=document.getElementById('lossSelect');
+    sel.style.display='block';
+    sel.innerHTML='<option value="">失注商談を選択...</option>'+
+      data.map((d,i)=>`<option value="${i}">${d.date} ${d.name} ${d.result} ${d.score}点 - ${d.bad_cause||''}</option>`).join('');
+    sel.onchange=()=>{
+      const idx=sel.value;if(idx==='')return;
+      const d=data[Number(idx)];
+      document.getElementById('persona').value='custom';
+      document.getElementById('customPersonaBox').style.display='block';
+      document.getElementById('customTranscript').value=`【担当】${d.name}\n【結果】${d.result}\n【スコア】${d.score}点\n【最大の減点要因】${d.bad_cause||''}\n【総評】${d.summary||''}\n【スキル内訳】権威性:${d.sub?.authority||'-'} 損失回避:${d.sub?.loss_aversion||'-'} RF:${d.sub?.reframing||'-'} アンカー:${d.sub?.anchoring||'-'} CL:${d.sub?.closing||'-'}`;
+      if(d.sub){
+        const worst=Object.entries(d.sub).sort((a,b)=>Number(a[1])-Number(b[1]))[0];
+        if(worst&&document.getElementById('weakPoint').querySelector(`option[value="${worst[0]}"]`)){
+          document.getElementById('weakPoint').value=worst[0];updateHint();
+        }
+      }
+    };
+  }catch(e){alert('GAS取得エラー: '+e.message)}
+}
+(function(){const u=localStorage.getItem('rp_gasUrl');if(u)document.getElementById('gasUrl').value=u}());
+
+// === STREAK ===
+function updateStreak(){
+  const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
+  if(!h.length){document.getElementById('streakBadge').innerHTML='';return}
+  const days=new Set(h.map(i=>i.date));
+  let streak=0;let d=new Date();
+  while(days.has(d.toLocaleDateString('ja-JP'))){streak++;d.setDate(d.getDate()-1)}
+  document.getElementById('streakBadge').innerHTML=streak>=2?`<span class="streak-badge">🔥 ${streak}日連続</span>`:'';
+}
+
+// === TITLE ===
+function updateTitle(score){
+  const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
+  const recent3=h.slice(0,3).map(i=>i.score);
+  let title='';
+  if(recent3.length>=3&&recent3.every(s=>s>=80))title='🥇 ゴールドクローザー';
+  else if(score>=80)title='🥈 シルバークローザー';
+  else if(score>=65)title='🥉 ブロンズクローザー';
+  document.getElementById('titleBadge').innerHTML=title?`<span class="title-badge">${title}</span>`:'';
+}
+</script>
+</body>
+</html>
+
