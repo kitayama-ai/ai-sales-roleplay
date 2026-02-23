@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🎯 AI営業ロープレ | ISAI型</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 :root{--bg:#0d0f14;--surface:#161920;--surface2:#1e2230;--border:#2a2f40;--accent:#4f6ef7;--accent2:#7c3aed;--green:#22c55e;--red:#ef4444;--gold:#f59e0b;--text:#e2e8f0;--text2:#94a3b8;--radius:12px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -42,6 +43,7 @@ main{flex:1;display:grid;grid-template-columns:300px 1fr;overflow:hidden}
 .msg-bb{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.6}
 .msg.ai .msg-bb{background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:4px}
 .msg.user .msg-bb{background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.25);border-bottom-right-radius:4px}
+.msg-bb.live{border-style:dashed;opacity:.85}
 .msg-t{font-size:10px;color:var(--text2);margin-top:3px}
 .msg.system{align-self:center;max-width:90%}
 .msg.system .msg-bb{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);color:var(--gold);font-size:12px;text-align:center}
@@ -151,9 +153,9 @@ canvas.waveform{width:100%;height:36px;border-radius:6px;background:var(--surfac
     <div><label>Gemini API Key</label><input type="password" id="apiKey" placeholder="AIzaSy..."></div>
     <div><label>モデル</label>
       <select id="modelName">
-        <option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio (推奨)</option>
+        <option value="gemini-2.0-flash-live-001">gemini-2.0-flash-live-001（標準）</option>
         <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
-        <option value="gemini-2.0-flash-live-001">gemini-2.0-flash-live-001</option>
+        <option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio（社長デモ用）</option>
       </select></div>
     <div><label><input type="checkbox" id="saveKey" style="width:auto;margin-right:6px">API Keyを保存する</label></div>
   </div>
@@ -161,6 +163,11 @@ canvas.waveform{width:100%;height:36px;border-radius:6px;background:var(--surfac
   <div>
     <div class="sh" style="margin-bottom:8px">スコア推移(10軸)</div>
     <div class="score-preview" id="scorePreview"></div>
+  </div>
+
+  <div>
+    <div class="sh" style="margin-bottom:8px">📈 スコアトレンド</div>
+    <div style="height:160px;background:var(--surface2);border-radius:var(--radius);padding:8px"><canvas id="trendChart"></canvas></div>
   </div>
 
   <div class="hint-box"><div class="ht">🎓 このロープレの目標</div><div class="hc" id="hintText"></div></div>
@@ -254,9 +261,18 @@ const ALL_SUBS = Object.keys(SUB_NAMES);
 
 let ws=null,audioContext=null,processor=null,mediaStream=null,sessionActive=false;
 let conversationLog=[],timerInterval=null,startTime=null,volumeAnimFrame=null,analyserNode=null;
-let turnCount=0,playbackCtx=null,audioQueue=[],currentSource=null,silenceTimer=null;
+let turnCount=0,playbackCtx=null,currentSource=null,silenceTimer=null;
 let mediaRecorder=null,recordedChunks=[];
 let waveCtx=null,waveData=null;
+
+// Live transcript bubble state
+let liveAiBubble=null,liveAiText='';
+let liveUserBubble=null,liveUserText='';
+let turnHadAudio=false;
+
+// Immediate audio scheduling state
+let scheduledSources=[];
+let nextPlayTime=0;
 
 // === INIT ===
 document.getElementById('weakPoint').addEventListener('change',updateHint);
@@ -296,7 +312,73 @@ function addMsg(role,text){
   if(role==='user')turnCount++;
   updateTurnCount();
 }
-function clearMsgs(){document.getElementById('messages').innerHTML='';conversationLog=[];turnCount=0;updateTurnCount()}
+function clearMsgs(){
+  document.getElementById('messages').innerHTML='';
+  conversationLog=[];turnCount=0;updateTurnCount();
+  liveAiBubble=null;liveAiText='';
+  liveUserBubble=null;liveUserText='';
+  turnHadAudio=false;
+}
+
+// === LIVE TRANSCRIPT BUBBLES (LINE-style) ===
+function getOrCreateLiveBubble(role){
+  if(role==='ai'){
+    if(!liveAiBubble){
+      const d=document.createElement('div');
+      d.className='msg ai';
+      const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      d.innerHTML=`<div class="msg-av">👤</div><div><div class="msg-bb live"></div><div class="msg-t">顧客(AI) · ${t}</div></div>`;
+      const m=document.getElementById('messages');m.appendChild(d);m.scrollTop=m.scrollHeight;
+      liveAiBubble=d.querySelector('.msg-bb');
+      liveAiText='';
+    }
+    return liveAiBubble;
+  }else{
+    if(!liveUserBubble){
+      const d=document.createElement('div');
+      d.className='msg user';
+      const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      d.innerHTML=`<div class="msg-av">🧑‍💼</div><div><div class="msg-bb live"></div><div class="msg-t">営業 · ${t}</div></div>`;
+      const m=document.getElementById('messages');m.appendChild(d);m.scrollTop=m.scrollHeight;
+      liveUserBubble=d.querySelector('.msg-bb');
+      liveUserText='';
+    }
+    return liveUserBubble;
+  }
+}
+
+function appendTranscript(role,text){
+  const bubble=getOrCreateLiveBubble(role);
+  if(role==='ai'){
+    liveAiText+=text;
+    bubble.innerHTML=liveAiText.replace(/\n/g,'<br>');
+  }else{
+    liveUserText+=text;
+    bubble.innerHTML=liveUserText.replace(/\n/g,'<br>');
+  }
+  document.getElementById('messages').scrollTop=document.getElementById('messages').scrollHeight;
+}
+
+function finalizeBubble(role){
+  if(role==='ai'){
+    if(liveAiBubble){
+      liveAiBubble.classList.remove('live');
+      if(liveAiText.trim()){
+        conversationLog.push({role:'顧客',text:liveAiText.trim(),time:new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),ts:Date.now()});
+      }
+    }
+    liveAiBubble=null;liveAiText='';
+  }else if(role==='user'){
+    if(liveUserBubble){
+      liveUserBubble.classList.remove('live');
+      if(liveUserText.trim()){
+        conversationLog.push({role:'営業',text:liveUserText.trim(),time:new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),ts:Date.now()});
+        turnCount++;updateTurnCount();
+      }
+    }
+    liveUserBubble=null;liveUserText='';
+  }
+}
 
 // === TIMER ===
 function startTimer(){startTime=Date.now();timerInterval=setInterval(()=>{const s=Math.floor((Date.now()-startTime)/1000);document.getElementById('sessionTimer').textContent='⏱ '+String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000)}
@@ -391,6 +473,7 @@ ${customLog.substring(0,3000)}
     },10000);
 
     ws.onopen=()=>{
+      // CRITICAL: Do NOT add output_audio_transcription, input_audio_transcription, or realtime_input_config here
       const setupPayload = {
         setup:{
           model:`models/${MODEL}`,
@@ -415,7 +498,6 @@ ${customLog.substring(0,3000)}
     ws.onmessage=async(e)=>{
       const raw = typeof e.data==='string'?e.data:await e.data.text();
       const data=JSON.parse(raw);
-      console.log('WS received:', raw.substring(0,500));
 
       if(data.setupComplete){
         clearTimeout(connectTimeout);
@@ -434,19 +516,35 @@ ${customLog.substring(0,3000)}
           if(p.inlineData?.mimeType?.startsWith('audio/')){playAudioChunk(p.inlineData.data);hasAudio=true;}
           // Skip p.text — native audio model outputs internal reasoning in English, not dialogue
         }
-        if(hasAudio) setStatus('speaking','AI顧客が話しています...');
+        if(hasAudio){setStatus('speaking','AI顧客が話しています...');turnHadAudio=true;}
       }
 
-      // output transcript (AI's speech as text) — if available
-      if(data.serverContent?.outputTranscript?.text){addMsg('ai',data.serverContent.outputTranscript.text)}
-      // input transcript (user's speech as text) — if available
-      if(data.serverContent?.inputTranscript?.text){addMsg('user',data.serverContent.inputTranscript.text);resetSilenceTimer()}
-      else if(typeof data.serverContent?.inputTranscript === 'string' && data.serverContent.inputTranscript){addMsg('user',data.serverContent.inputTranscript);resetSilenceTimer()}
+      // Live transcript: AI speech as text (streamed in chunks)
+      if(data.serverContent?.outputTranscript?.text){
+        appendTranscript('ai',data.serverContent.outputTranscript.text);
+      }
+      // Live transcript: User speech as text
+      if(data.serverContent?.inputTranscript?.text){
+        appendTranscript('user',data.serverContent.inputTranscript.text);
+        finalizeBubble('user');
+        resetSilenceTimer();
+      }else if(typeof data.serverContent?.inputTranscript === 'string' && data.serverContent.inputTranscript){
+        appendTranscript('user',data.serverContent.inputTranscript);
+        finalizeBubble('user');
+        resetSilenceTimer();
+      }
+
       if(data.serverContent?.interrupted){clearAudioQueue();setStatus('listening','割り込み検知 — 続けてどうぞ')}
+
       if(data.serverContent?.turnComplete){
-        setStatus('listening','あなたの番です');resetSilenceTimer();
-        // Log AI turn marker for grading (audio was played)
-        conversationLog.push({role:'顧客',text:'(音声発言)',time:new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),ts:Date.now()});
+        // Finalize AI bubble; if no transcript received but audio played, log marker for grading
+        if(!liveAiText.trim() && turnHadAudio){
+          conversationLog.push({role:'顧客',text:'(音声発言)',time:new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),ts:Date.now()});
+        }
+        finalizeBubble('ai');
+        turnHadAudio=false;
+        setStatus('listening','あなたの番です');
+        resetSilenceTimer();
       }
 
       if(data.error){
@@ -485,54 +583,42 @@ const WORKLET_CODE=`class PcmProcessor extends AudioWorkletProcessor{constructor
 function ab2b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.byteLength;i++)s+=String.fromCharCode(b[i]);return btoa(s)}
 function startVolMon(){const vf=document.getElementById('volFill');const d=new Uint8Array(analyserNode.frequencyBinCount);(function tick(){if(!sessionActive)return;analyserNode.getByteFrequencyData(d);vf.style.width=Math.min(100,d.reduce((a,b)=>a+b,0)/d.length*2)+'%';volumeAnimFrame=requestAnimationFrame(tick)})()}
 
-// === PLAYBACK ===
+// === PLAYBACK (Immediate Scheduling — zero batch delay) ===
 function getPlayCtx(){
   if(!playbackCtx || playbackCtx.state==='closed'){
     playbackCtx = new AudioContext({sampleRate:24000});
   }
   return playbackCtx;
 }
-function clearAudioQueue(){audioQueue=[];if(currentSource){try{currentSource.stop()}catch(e){}currentSource=null}}
 
-// Accumulate audio chunks into one larger buffer before playback to prevent audio crackling
-let pendingChunks = [];
-let flushTimer = null;
+function clearAudioQueue(){
+  scheduledSources.forEach(s=>{try{s.stop()}catch(e){}});
+  scheduledSources=[];
+  nextPlayTime=0;
+}
 
 function playAudioChunk(b64){
   const raw=atob(b64);const bytes=new Uint8Array(raw.length);
   for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
   const pcm=new Int16Array(bytes.buffer);const f32=new Float32Array(pcm.length);
   for(let i=0;i<pcm.length;i++)f32[i]=pcm[i]/32768;
-  pendingChunks.push(f32);
-  // Flush after small delay to batch chunks together
-  clearTimeout(flushTimer);
-  flushTimer = setTimeout(flushPendingAudio, 80);
-}
 
-function flushPendingAudio(){
-  if(!pendingChunks.length) return;
-  const ctx = getPlayCtx();
-  // Merge all pending chunks into one buffer
-  const totalLen = pendingChunks.reduce((sum,c)=>sum+c.length, 0);
-  const merged = new Float32Array(totalLen);
-  let offset = 0;
-  for(const c of pendingChunks){merged.set(c, offset);offset+=c.length;}
-  pendingChunks = [];
-  const buf = ctx.createBuffer(1, merged.length, 24000);
-  buf.getChannelData(0).set(merged);
-  audioQueue.push(buf);
-  if(!currentSource) drainQ(ctx);
-}
+  const ctx=getPlayCtx();
+  const buf=ctx.createBuffer(1,f32.length,24000);
+  buf.getChannelData(0).set(f32);
 
-function drainQ(ctx){
-  if(!audioQueue.length){currentSource=null;return;}
-  const buf=audioQueue.shift();
   const s=ctx.createBufferSource();
   s.buffer=buf;
   s.connect(ctx.destination);
-  currentSource=s;
-  s.onended=()=>{currentSource=null;drainQ(ctx);};
-  s.start();
+
+  // Schedule immediately with no batching delay
+  const now=ctx.currentTime;
+  if(nextPlayTime<now) nextPlayTime=now;
+  s.start(nextPlayTime);
+  nextPlayTime+=buf.duration;
+
+  scheduledSources.push(s);
+  s.onended=()=>{scheduledSources=scheduledSources.filter(x=>x!==s)};
 }
 
 // === RECORDING ===
@@ -648,6 +734,7 @@ ${logText}
     showResult(result);
     saveHistory(result);
     saveUsage(result);
+    postToGAS(result);
   }catch(e){alert('採点エラー: '+e.message)}
   document.getElementById('btnGrade').disabled=false;
   document.getElementById('btnGrade').textContent='📊 採点';
@@ -724,6 +811,45 @@ function loadHistory(){
       if(bar&&val){bar.style.width=(v/10*100)+'%';val.textContent=v;}
     });
   }
+  renderTrendChart();
+}
+
+// === SCORE TREND CHART (Chart.js) ===
+function renderTrendChart(){
+  const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
+  const canvas=document.getElementById('trendChart');
+  if(!canvas||!h.length)return;
+  const recent=h.slice(0,10).reverse();
+  const labels=recent.map((_,i)=>'#'+(i+1));
+  const scores=recent.map(i=>i.score);
+
+  if(window.trendChartInstance) window.trendChartInstance.destroy();
+
+  window.trendChartInstance=new Chart(canvas.getContext('2d'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'総合スコア',
+        data:scores,
+        borderColor:'#4f6ef7',
+        backgroundColor:'rgba(79,110,247,0.1)',
+        fill:true,
+        tension:0.3,
+        pointRadius:4,
+        pointBackgroundColor:'#4f6ef7'
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      scales:{
+        y:{min:0,max:100,ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'rgba(42,47,64,0.5)'}},
+        x:{ticks:{color:'#94a3b8',font:{size:9}},grid:{display:false}}
+      },
+      plugins:{legend:{display:false}}
+    }
+  });
 }
 
 // === USAGE TRACKING ===
@@ -742,6 +868,32 @@ function saveUsage(r){
     weakPoint:document.getElementById('weakPoint').value
   });
   localStorage.setItem('rp_usage',JSON.stringify(usage));
+}
+
+// === GAS POST (採点結果をスプレッドシートに送信) ===
+async function postToGAS(result){
+  const gasUrl=document.getElementById('gasUrl').value.trim();
+  if(!gasUrl)return;
+  try{
+    const subScores={};
+    if(result.sub) Object.entries(result.sub).forEach(([k,v])=>subScores[k]=typeof v==='object'?v.score:v);
+    await fetch(gasUrl,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:document.getElementById('salesName').value||'未設定',
+        date:new Date().toISOString(),
+        score:result.total,
+        sub:subScores,
+        feedback:result.feedback||'',
+        weakPoint:document.getElementById('weakPoint').value,
+        scenario:document.getElementById('scenario').value,
+        duration:startTime?Math.floor((Date.now()-startTime)/1000):0
+      })
+    });
+    console.log('GAS POST完了');
+  }catch(e){console.warn('GAS POSTエラー:',e)}
 }
 
 function showUsageDashboard(){
@@ -789,7 +941,7 @@ function exportUsageCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`roleplay_usage_${month}.csv`;a.click();
 }
 
-// === GAS INTEGRATION ===
+// === GAS INTEGRATION (失注データ取得) ===
 async function fetchLossData(){
   const url=document.getElementById('gasUrl').value.trim();
   if(!url){alert('GAS Web App URLを入力してください');return}
@@ -841,4 +993,3 @@ function updateTitle(score){
 </script>
 </body>
 </html>
-
