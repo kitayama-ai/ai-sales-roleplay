@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI営業ロープレ</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -160,6 +161,30 @@ body {
   background: rgba(19,127,236,.1);
   color: #137fec;
   font-weight: 600;
+}
+
+/* Coaching toast */
+.coach-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(0,0,0,.85);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  z-index: 200;
+  opacity: 0;
+  transition: all .3s ease;
+  pointer-events: none;
+  max-width: 90%;
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+.coach-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* ============================================= */
@@ -923,6 +948,10 @@ body {
       <span class="material-symbols-outlined">analytics</span>
       <span class="text-sm">スキル分析</span>
     </a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer" id="navTeam" onclick="showDashSection('team')">
+      <span class="material-symbols-outlined">groups</span>
+      <span class="text-sm">チーム</span>
+    </a>
   </nav>
   <div class="flex flex-col gap-1 px-3">
     <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer" onclick="scrollToConfig()">
@@ -1061,6 +1090,23 @@ body {
     </div>
   </div>
 
+  <!-- Team Section (hidden by default) -->
+  <div id="dashTeam" style="display:none">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-slate-900 tracking-tight">チーム管理</h2>
+      <p class="text-slate-500 text-sm mt-1">メンバーの練習状況とスコアを一覧で確認できます。</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 p-6 mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-slate-700">メンバー一覧</h3>
+        <button onclick="addTeamMember()" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+          <span class="material-symbols-outlined" style="font-size:16px">person_add</span> メンバー追加
+        </button>
+      </div>
+      <div id="teamTable"></div>
+    </div>
+  </div>
+
   <!-- Skills Section (hidden by default) -->
   <div id="dashSkills" style="display:none">
     <div class="mb-6">
@@ -1127,6 +1173,9 @@ body {
         <div class="pip-mic" id="pipMic">🎤</div>
       </div>
 
+      <!-- Coaching Toast -->
+      <div class="coach-toast" id="coachToast"></div>
+
       <!-- Live Captions -->
       <div class="live-captions" id="liveCaptions">
         <span class="caption-sender" id="captionSender"></span>
@@ -1192,6 +1241,12 @@ body {
     </div>
   </div>
   <div class="flex items-center gap-3">
+    <button class="flex cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-all" onclick="exportResultPDF()">
+      <span class="material-symbols-outlined mr-1" style="font-size:18px">picture_as_pdf</span> PDF
+    </button>
+    <button class="flex cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-all" onclick="exportResultCSV()">
+      <span class="material-symbols-outlined mr-1" style="font-size:18px">download</span> CSV
+    </button>
     <button class="flex cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-all" onclick="backToLobby()">
       <span class="material-symbols-outlined mr-1" style="font-size:18px">arrow_back</span> 新しいセッション
     </button>
@@ -1486,6 +1541,72 @@ function renderScenarioCards(){
       </div>
     </div>
   `).join('');
+  // Add custom scenario cards from localStorage
+  const customScenarios=JSON.parse(localStorage.getItem('rp_custom_scenarios')||'[]');
+  customScenarios.forEach((c,i)=>{
+    grid.innerHTML+=`
+    <div class="group bg-white rounded-xl overflow-hidden border border-slate-200 hover:shadow-xl hover:border-primary/30 transition-all cursor-pointer" data-scenario-card="custom_${i}" onclick="startCustomScenario(${i})">
+      <div class="relative aspect-video overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+        <span class="material-symbols-outlined text-slate-300" style="font-size:64px">person</span>
+        <div class="absolute top-3 left-3 z-20">
+          <span class="px-2.5 py-1 rounded-full bg-slate-500/90 text-white text-[10px] font-bold uppercase tracking-wider">${{easy:'初級',medium:'中級',hard:'上級'}[c.difficulty]||'中級'}</span>
+        </div>
+        <button onclick="event.stopPropagation();deleteCustomScenario(${i})" class="absolute top-3 right-3 z-20 w-7 h-7 rounded-full bg-white/80 hover:bg-red-100 flex items-center justify-center transition-colors" title="削除">
+          <span class="material-symbols-outlined text-slate-400 hover:text-red-500" style="font-size:16px">delete</span>
+        </button>
+      </div>
+      <div class="p-4 sm:p-5">
+        <h3 class="text-base sm:text-lg font-bold text-slate-800 group-hover:text-primary transition-colors leading-tight mb-2">${c.title}</h3>
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-sm text-slate-500">${c.personaLabel||'カスタムペルソナ'}</span>
+        </div>
+        <p class="text-sm text-slate-500 line-clamp-2 mb-4">${c.desc||''}</p>
+        <button class="w-full py-2.5 rounded-lg bg-slate-50 text-slate-700 text-sm font-semibold group-hover:bg-primary group-hover:text-white transition-all">セッションを開始</button>
+      </div>
+    </div>`;
+  });
+  // Add "Create new" card
+  grid.innerHTML+=`
+    <div class="group bg-white rounded-xl overflow-hidden border-2 border-dashed border-slate-300 hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center min-h-[320px]" onclick="showCreateScenarioModal()">
+      <span class="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors" style="font-size:48px">add_circle</span>
+      <span class="text-sm font-semibold text-slate-400 group-hover:text-primary mt-2 transition-colors">カスタムシナリオを作成</span>
+    </div>`;
+}
+
+function startCustomScenario(idx){
+  const customs=JSON.parse(localStorage.getItem('rp_custom_scenarios')||'[]');
+  const c=customs[idx];
+  if(!c)return;
+  document.getElementById('persona').value=c.persona||'price';
+  document.getElementById('difficulty').value=c.difficulty||'medium';
+  document.getElementById('weakPoint').value=c.weakPoint||'anchoring';
+  document.getElementById('scenario').value=c.scenario||'full';
+  updateHint();onPersonaChange();
+  document.getElementById('presetLabel').textContent='← '+c.title+' (カスタム)';
+  document.getElementById('configPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function deleteCustomScenario(idx){
+  if(!confirm('このカスタムシナリオを削除しますか？'))return;
+  const customs=JSON.parse(localStorage.getItem('rp_custom_scenarios')||'[]');
+  customs.splice(idx,1);
+  localStorage.setItem('rp_custom_scenarios',JSON.stringify(customs));
+  renderScenarioCards();
+}
+
+function showCreateScenarioModal(){
+  const title=prompt('シナリオ名:');
+  if(!title)return;
+  const desc=prompt('シナリオの説明:','');
+  const difficulty=prompt('難易度 (easy/medium/hard):','medium');
+  const persona=prompt('ペルソナ (price/compare/busy/spouse/doubt):','price');
+  const weakPoint=prompt('重点弱点 (anchoring/authority/loss_aversion/reframing/closing/hearing/rapport/objection/tempo/proposal):','anchoring');
+  const scenario=prompt('シナリオ (full/opening/price_objection/closing_3min):','full');
+  const customs=JSON.parse(localStorage.getItem('rp_custom_scenarios')||'[]');
+  const personaLabels={price:'「高い」と言う顧客',compare:'比較検討する顧客',busy:'「忙しい」顧客',spouse:'「配偶者相談」顧客',doubt:'「効果あるの？」顧客'};
+  customs.push({title,desc,difficulty:difficulty||'medium',persona:persona||'price',weakPoint:weakPoint||'anchoring',scenario:scenario||'full',personaLabel:personaLabels[persona]||persona});
+  localStorage.setItem('rp_custom_scenarios',JSON.stringify(customs));
+  renderScenarioCards();
 }
 
 function startScenario(id){
@@ -1517,15 +1638,60 @@ function showDashSection(section){
   document.getElementById('dashScenarios').style.display=section==='scenarios'?'':'none';
   document.getElementById('dashHistory').style.display=section==='history'?'':'none';
   document.getElementById('dashSkills').style.display=section==='skills'?'':'none';
+  document.getElementById('dashTeam').style.display=section==='team'?'':'none';
+  if(section==='team') renderTeamDashboard();
   // Update sidebar active state
-  ['navDashboard','navHistory','navSkills'].forEach(id=>{
+  ['navDashboard','navHistory','navSkills','navTeam'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
-    const isActive=(id==='navDashboard'&&section==='scenarios')||(id==='navHistory'&&section==='history')||(id==='navSkills'&&section==='skills');
+    const isActive=(id==='navDashboard'&&section==='scenarios')||(id==='navHistory'&&section==='history')||(id==='navSkills'&&section==='skills')||(id==='navTeam'&&section==='team');
     el.className=isActive
       ?'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-semibold cursor-pointer'
       :'flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer';
   });
+}
+
+// === TEAM MANAGEMENT ===
+function getTeamData(){return JSON.parse(localStorage.getItem('rp_team')||'[]')}
+function saveTeamData(d){localStorage.setItem('rp_team',JSON.stringify(d))}
+function addTeamMember(){
+  const name=prompt('メンバー名を入力:');
+  if(!name)return;
+  const team=getTeamData();
+  team.push({name,addedAt:new Date().toISOString()});
+  saveTeamData(team);
+  renderTeamDashboard();
+}
+function removeTeamMember(idx){
+  if(!confirm('このメンバーを削除しますか？'))return;
+  const team=getTeamData();team.splice(idx,1);saveTeamData(team);renderTeamDashboard();
+}
+function renderTeamDashboard(){
+  const el=document.getElementById('teamTable');
+  if(!el)return;
+  const team=getTeamData();
+  const history=JSON.parse(localStorage.getItem('rp_history')||'[]');
+  if(!team.length){el.innerHTML='<p class="text-sm text-slate-400 text-center py-8">メンバーがいません。「メンバー追加」から登録してください。</p>';return}
+  let html='<table style="width:100%;border-collapse:collapse;font-size:13px">';
+  html+='<tr style="border-bottom:2px solid #e2e8f0"><th class="text-left" style="padding:8px;color:#64748b;font-weight:600">担当者</th><th style="color:#64748b;font-weight:600">練習回数</th><th style="color:#64748b;font-weight:600">平均スコア</th><th style="color:#64748b;font-weight:600">最低軸</th><th style="color:#64748b;font-weight:600">最終練習</th><th></th></tr>';
+  team.forEach((m,i)=>{
+    const memberHist=history.filter(h=>h.name===m.name);
+    const count=memberHist.length;
+    const avg=count?(memberHist.reduce((a,h)=>a+h.score,0)/count).toFixed(0):'--';
+    const avgColor=avg>=70?'#16a34a':avg>=50?'#d97706':'#dc2626';
+    // Find weakest axis across all sessions
+    let worstAxis='--';
+    if(count){
+      const axisTotals={};
+      memberHist.forEach(h=>{if(h.sub)Object.entries(h.sub).forEach(([k,v])=>{if(!axisTotals[k])axisTotals[k]={sum:0,cnt:0};axisTotals[k].sum+=v;axisTotals[k].cnt++})});
+      const axisAvgs=Object.entries(axisTotals).map(([k,v])=>[k,v.sum/v.cnt]).sort((a,b)=>a[1]-b[1]);
+      if(axisAvgs.length) worstAxis=SUB_NAMES[axisAvgs[0][0]]||axisAvgs[0][0];
+    }
+    const lastDate=memberHist[0]?.date||'--';
+    html+=`<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:10px 8px;font-weight:600">${m.name}</td><td style="text-align:center">${count}回</td><td style="text-align:center;color:${avgColor};font-weight:700">${avg}</td><td style="text-align:center;font-size:11px">${worstAxis}</td><td style="text-align:center;font-size:11px">${lastDate}</td><td><button onclick="removeTeamMember(${i})" style="color:#94a3b8;cursor:pointer;background:none;border:none;font-size:16px" title="削除">✕</button></td></tr>`;
+  });
+  html+='</table>';
+  el.innerHTML=html;
 }
 
 let ws=null,audioContext=null,processor=null,mediaStream=null,sessionActive=false,intentionalClose=false;
@@ -1732,14 +1898,40 @@ function startTimer(){
 }
 
 // === SILENCE HINT ===
+let coachTimer=null,lastUserSpeech=0,lastAISpeech=0,userTurnCount=0;
 function resetSilenceTimer(){
   clearTimeout(silenceTimer);
+  lastAISpeech=Date.now();
   silenceTimer=setTimeout(()=>{
     if(!sessionActive)return;
     const wp=document.getElementById('weakPoint').value;
-    const hints={anchoring:'💡 「それは投資です」と言い換えてみましょう',authority:'💡 「なぜそう思いますか？」と返してみましょう',loss_aversion:'💡 「3年後の自分を想像してみてください」',reframing:'💡 「スクールではなく社内研修です」と定義し直しましょう',closing:'💡 「では手続きに移りましょう」と言い切ってみましょう'};
+    const hints={anchoring:'💡 「それは投資です」と言い換えてみましょう',authority:'💡 「なぜそう思いますか？」と返してみましょう',loss_aversion:'💡 「3年後の自分を想像してみてください」',reframing:'💡 「スクールではなく社内研修です」と定義し直しましょう',closing:'💡 「では手続きに移りましょう」と言い切ってみましょう',hearing:'💡 「他に困っていることは？」と深掘りしましょう',rapport:'💡 相手の名前を呼んで共感しましょう',objection:'💡 「つまり〜が解決すれば前向きですか？」',tempo:'💡 一呼吸おいてから話しましょう',proposal:'💡 「御社の場合〜」と具体例を出しましょう'};
+    showCoachToast(hints[wp]||'💡 何か話しかけてみましょう');
     addMsg('system',hints[wp]||'💡 何か話しかけてみましょう');
-  },15000);
+  },12000);
+}
+function showCoachToast(msg){
+  const el=document.getElementById('coachToast');
+  if(!el)return;
+  el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(coachTimer);
+  coachTimer=setTimeout(()=>el.classList.remove('show'),5000);
+}
+function runCoachCheck(){
+  if(!sessionActive)return;
+  const now=Date.now();
+  const elapsed=startTime?(now-startTime)/1000:0;
+  // Check after 60s if user hasn't asked questions
+  if(elapsed>60&&userTurnCount<2){
+    showCoachToast('💡 質問をして相手の課題を引き出しましょう');
+  }
+  // Check if user is talking too much (3+ consecutive turns)
+  const recent=conversationLog.slice(-4);
+  const consecutive=recent.filter(m=>m.role==='営業').length;
+  if(consecutive>=3){
+    showCoachToast('💡 話しすぎかも。相手に質問を投げましょう');
+  }
 }
 
 // === JOIN MEETING ===
@@ -2148,6 +2340,7 @@ ${logText}
       Object.entries(result.sub).forEach(([k,v])=>{norm[k]=typeof v==='object'?v:{score:v,evidence:'',deduction:''}});
       result.sub=norm;
     }
+    lastGradeResult=result;
     showResult(result);
     saveHistory(result);
     saveUsage(result);
@@ -2344,6 +2537,34 @@ function showResult(r){
         <span class="text-sm font-bold">理想のトーク例</span>
       </div>
       <p class="text-xs text-slate-600 leading-relaxed italic">${r.ideal}</p>
+    </div>`;
+  }
+
+  // Per-turn timeline
+  if(r.timeline?.length){
+    insightsHTML+=`<div class="p-4 rounded-lg bg-white border border-slate-200 space-y-3">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="material-symbols-outlined text-slate-500" style="font-size:18px">timeline</span>
+        <span class="text-sm font-bold">ターン別タイムライン</span>
+      </div>
+      <div class="space-y-2">
+        ${r.timeline.map(t=>{
+          const icon=t.evaluation==='良い'?'thumb_up':t.evaluation==='悪い'?'thumb_down':'remove';
+          const color=t.evaluation==='良い'?'text-green-600 bg-green-50 border-green-200':t.evaluation==='悪い'?'text-red-500 bg-red-50 border-red-200':'text-slate-500 bg-slate-50 border-slate-200';
+          return `<div class="flex gap-3 items-start">
+            <div class="flex-shrink-0 w-7 h-7 rounded-full ${color} border flex items-center justify-center">
+              <span class="material-symbols-outlined" style="font-size:14px">${icon}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-700">${t.event}</span>
+                <span class="text-[10px] text-slate-400">${t.time||''}</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">${t.comment||''}</p>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
     </div>`;
   }
 
@@ -2557,6 +2778,112 @@ function updateTitle(score){
   else if(score>=65)title='🥉 ブロンズクローザー';
   const badge=document.getElementById('titleBadgeResult');
   if(badge)badge.innerHTML=title?`<span class="title-badge">${title}</span>`:'';
+}
+
+// === PDF/CSV EXPORT ===
+let lastGradeResult=null;
+function exportResultPDF(){
+  if(!lastGradeResult){alert('採点結果がありません');return}
+  const r=lastGradeResult;
+  const {jsPDF}=window.jspdf||{};
+  if(!jsPDF){alert('PDF生成ライブラリの読み込みに失敗しました');return}
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const persona=PERSONAS[document.getElementById('persona').value]?.jp||'カスタム';
+  const dur=startTime?Math.floor((Date.now()-startTime)/1000):0;
+  const durStr=Math.floor(dur/60)+'分'+dur%60+'秒';
+  const dateStr=new Date().toLocaleDateString('ja-JP');
+  const name=document.getElementById('salesName').value||'未設定';
+
+  // Header
+  doc.setFontSize(18);doc.text('AI Sales Pro - Session Report',14,20);
+  doc.setFontSize(10);doc.setTextColor(100);
+  doc.text(`Date: ${dateStr}  |  Sales: ${name}  |  Persona: ${persona}  |  Duration: ${durStr}`,14,28);
+  doc.setDrawColor(200);doc.line(14,32,196,32);
+
+  // Total score
+  doc.setFontSize(14);doc.setTextColor(0);doc.text(`Total Score: ${r.total}/100`,14,42);
+
+  // Sub scores table
+  let y=52;
+  doc.setFontSize(9);doc.setTextColor(100);
+  doc.text('Skill',14,y);doc.text('Score',60,y);doc.text('Deduction',80,y);
+  y+=2;doc.line(14,y,196,y);y+=6;
+  doc.setTextColor(0);
+  if(r.sub){
+    Object.entries(r.sub).forEach(([k,v])=>{
+      const sc=typeof v==='object'?v.score:v;
+      const ded=typeof v==='object'?(v.deduction||''):'';
+      doc.setFontSize(9);
+      doc.text(SUB_NAMES[k]||k,14,y);
+      doc.text(String(sc)+'/10',60,y);
+      const dedLines=doc.splitTextToSize(ded,110);
+      doc.text(dedLines,80,y);
+      y+=Math.max(dedLines.length*4,6)+2;
+      if(y>270){doc.addPage();y=20}
+    });
+  }
+
+  // Feedback
+  y+=6;
+  if(r.feedback){
+    doc.setFontSize(10);doc.setTextColor(0);doc.text('Feedback:',14,y);y+=6;
+    doc.setFontSize(9);doc.setTextColor(60);
+    const fbLines=doc.splitTextToSize(r.feedback,178);
+    doc.text(fbLines,14,y);y+=fbLines.length*4+4;
+  }
+
+  // Timeline
+  if(r.timeline?.length){
+    if(y>240){doc.addPage();y=20}
+    doc.setFontSize(10);doc.setTextColor(0);doc.text('Timeline:',14,y);y+=6;
+    r.timeline.forEach(t=>{
+      doc.setFontSize(8);doc.setTextColor(60);
+      const evalIcon=t.evaluation==='良い'?'[+]':t.evaluation==='悪い'?'[-]':'[=]';
+      const line=`${evalIcon} ${t.event} - ${t.comment||''}`;
+      const lines=doc.splitTextToSize(line,178);
+      doc.text(lines,14,y);y+=lines.length*3.5+2;
+      if(y>270){doc.addPage();y=20}
+    });
+  }
+
+  doc.save(`sales_report_${dateStr.replace(/\//g,'-')}.pdf`);
+}
+
+function exportResultCSV(){
+  if(!lastGradeResult){alert('採点結果がありません');return}
+  const r=lastGradeResult;
+  const persona=PERSONAS[document.getElementById('persona').value]?.jp||'カスタム';
+  const dur=startTime?Math.floor((Date.now()-startTime)/1000):0;
+  const dateStr=new Date().toLocaleDateString('ja-JP');
+  const name=document.getElementById('salesName').value||'未設定';
+  let csv='\uFEFF';  // BOM for Excel
+  csv+='項目,値\n';
+  csv+=`日付,${dateStr}\n`;
+  csv+=`担当者,${name}\n`;
+  csv+=`ペルソナ,${persona}\n`;
+  csv+=`合計スコア,${r.total}\n`;
+  csv+=`セッション時間,${dur}秒\n\n`;
+  csv+='スキル,スコア,減点理由,根拠\n';
+  if(r.sub){
+    Object.entries(r.sub).forEach(([k,v])=>{
+      const sc=typeof v==='object'?v.score:v;
+      const ded=typeof v==='object'?(v.deduction||'').replace(/,/g,'、'):'';
+      const ev=typeof v==='object'?(v.evidence||'').replace(/,/g,'、'):'';
+      csv+=`${SUB_NAMES[k]||k},${sc},"${ded}","${ev}"\n`;
+    });
+  }
+  if(r.feedback) csv+=`\nフィードバック,"${r.feedback.replace(/"/g,'""')}"\n`;
+  if(r.timeline?.length){
+    csv+='\nタイムライン\n時間,イベント,評価,コメント\n';
+    r.timeline.forEach(t=>csv+=`${t.time||''},"${(t.event||'').replace(/"/g,'""')}",${t.evaluation||''},"${(t.comment||'').replace(/"/g,'""')}"\n`);
+  }
+  // Conversation log
+  csv+='\n会話ログ\n時間,話者,発言\n';
+  conversationLog.filter(m=>m.role!=='system').forEach(m=>{
+    csv+=`${m.time||''},${m.role},"${(m.text||'').replace(/"/g,'""')}"\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`sales_report_${dateStr.replace(/\//g,'-')}.csv`;a.click();
 }
 </script>
 </body>
