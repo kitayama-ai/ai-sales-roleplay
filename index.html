@@ -5,318 +5,1476 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI営業ロープレ</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  important: '#screen-results',
+  corePlugins: { preflight: false },
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#137fec",
+        "background-light": "#f6f7f8",
+      },
+      fontFamily: {
+        "display": ["Inter", "Noto Sans JP", "sans-serif"]
+      },
+      borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+    },
+  },
+}
+</script>
 <style>
-:root{--bg:#f2f2f7;--surface:#ffffff;--surface2:#f7f7fa;--surface3:#ebebf0;--border:#d1d1d6;--border-light:#e5e5ea;--accent:#007aff;--accent2:#5856d6;--green:#34c759;--red:#ff3b30;--gold:#ff9500;--warm:#ff6b35;--text:#1d1d1f;--text2:#6e6e73;--text3:#aeaeb2;--radius:12px;--radius-lg:16px;--radius-xl:20px;--shadow-sm:0 1px 2px rgba(0,0,0,0.04);--shadow-md:0 4px 16px rgba(0,0,0,0.08);--shadow-lg:0 12px 40px rgba(0,0,0,0.15);--shadow-card:0 2px 12px rgba(0,0,0,0.06)}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+.filled { font-variation-settings: 'FILL' 1; }
+</style>
+<style>
+/* === CSS CUSTOM PROPERTIES === */
+:root {
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --surface2: #f1f3f4;
+  --surface3: #e8eaed;
+  --border: #dadce0;
+  --border-light: #e8eaed;
+  --accent: #1a73e8;
+  --accent2: #7c3aed;
+  --green: #1e8e3e;
+  --red: #ea4335;
+  --gold: #f9ab00;
+  --warm: #ff6b35;
+  --text: #202124;
+  --text2: #5f6368;
+  --text3: #80868b;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 3px rgba(60,64,67,.15);
+  --shadow-md: 0 4px 16px rgba(60,64,67,.15);
+  --shadow-lg: 0 12px 40px rgba(60,64,67,.2);
 
-/* === HEADER === */
-header{padding:14px 24px;display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#ffffff 0%,#fafafe 100%);border-bottom:1px solid var(--border-light);box-shadow:0 1px 8px rgba(0,0,0,0.04);position:sticky;top:0;z-index:40}
-header .logo{font-size:18px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.02em}
-header .meta{display:flex;gap:12px;margin-left:auto;font-size:12px;color:var(--text2);align-items:center}
-header .meta span{display:flex;align-items:center;gap:4px}
-.badge{background:var(--surface2);border:none;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--text2)}
-.header-btn{background:var(--surface2);border:none;color:var(--text2);border-radius:8px;padding:5px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
-.header-btn:hover{background:var(--surface3);color:var(--text)}
+  /* Google Meet palette (light) */
+  --call-bg: #f8f9fa;
+  --call-surface: #ffffff;
+  --call-surface2: #f1f3f4;
+  --call-border: #dadce0;
+  --call-text: #202124;
+  --call-text2: #5f6368;
+  --call-red: #ea4335;
+  --call-green: #1e8e3e;
+  --call-blue: #1a73e8;
 
-/* === LAYOUT (single column, chat-centric) === */
-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.mobile-toggle{display:none}
+  /* Dark stage (video area only) */
+  --stage-bg: #202124;
+  --stage-surface: #3c4043;
+  --stage-text: #e8eaed;
+  --stage-text2: #9aa0a6;
+}
 
-/* === SETTINGS PANEL (replaces sidebar) === */
-.sidebar{background:linear-gradient(180deg,#fafafe 0%,var(--bg) 100%);border-bottom:1px solid var(--border-light);box-shadow:inset 0 -1px 0 rgba(0,0,0,0.02)}
-.settings-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text);user-select:none;list-style:none;-webkit-user-select:none}
-.settings-toggle::-webkit-details-marker{display:none}
-.settings-toggle::after{content:'';width:8px;height:8px;border-right:2px solid var(--text3);border-bottom:2px solid var(--text3);transform:rotate(45deg);transition:transform .2s ease;flex-shrink:0}
-details.sidebar[open]>.settings-toggle::after{transform:rotate(-135deg)}
-.settings-body{padding:0 24px 20px;max-width:800px;margin:0 auto;width:100%}
-.settings-essential{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+* { box-sizing: border-box; margin: 0; padding: 0 }
+body {
+  background: var(--call-bg);
+  color: var(--call-text);
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
 
-/* Section heading */
-.sh{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em}
+/* === SCREEN MANAGEMENT === */
+.screen { display: none; height: 100vh; height: 100dvh }
+.screen.active { display: flex }
+
+/* ============================================= */
+/* === LOBBY SCREEN (Pre-join)               === */
+/* ============================================= */
+#screen-lobby {
+  flex-direction: column;
+  background: var(--bg);
+  align-items: center;
+  justify-content: center;
+}
+
+.lobby-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lobby-logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lobby-logo span { opacity: .5; font-weight: 400; font-size: 14px }
+.lobby-header-actions { display: flex; gap: 8px }
+.lobby-header-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s;
+  font-family: inherit;
+}
+.lobby-header-btn:hover { background: var(--surface2) }
+
+.lobby-container {
+  display: grid;
+  grid-template-columns: 1.2fr 380px;
+  gap: 32px;
+  max-width: 960px;
+  width: 92%;
+  align-items: center;
+}
+
+/* Camera preview card */
+.lobby-preview {
+  background: var(--stage-bg);
+  border-radius: 12px;
+  aspect-ratio: 16/10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.lobby-preview-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,.03) 0%, transparent 70%);
+}
+.lobby-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5c6bc0, #7c4dff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  z-index: 1;
+  margin-bottom: 12px;
+}
+.lobby-user-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--stage-text);
+  z-index: 1;
+  min-height: 24px;
+}
+.lobby-mic-test {
+  z-index: 1;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--stage-text2);
+}
+.lobby-mic-bar {
+  width: 120px;
+  height: 4px;
+  background: var(--stage-surface);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.lobby-mic-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--call-green);
+  border-radius: 2px;
+  transition: width .05s;
+}
+
+/* Preview bottom buttons */
+.lobby-preview-controls {
+  position: absolute;
+  bottom: 16px;
+  display: flex;
+  gap: 12px;
+  z-index: 1;
+}
+.preview-ctrl-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--stage-surface);
+  color: var(--stage-text);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.preview-ctrl-btn:hover { background: #5f6368 }
+.preview-ctrl-btn.muted { background: var(--call-red); color: #fff }
+
+/* Settings panel */
+.lobby-settings {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+.lobby-settings::-webkit-scrollbar { width: 4px }
+.lobby-settings::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px }
+.lobby-settings h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.lobby-settings .meeting-info {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 4px;
+}
 
 /* Form */
-.config-form{display:flex;flex-direction:column;gap:10px}
-.config-form label{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:2px;display:block}
-.config-form input,.config-form select{width:100%;background:var(--surface);border:1px solid var(--border-light);color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;box-shadow:var(--shadow-sm)}
-.config-form select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%2386868b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-.config-form input:focus,.config-form select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,122,255,.1)}
+.config-form { display: flex; flex-direction: column; gap: 12px }
+.config-form label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 2px; display: block }
+.config-form input, .config-form select, .config-form textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.config-form select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%235f6368' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.config-form input:focus, .config-form select:focus, .config-form textarea:focus {
+  border-color: var(--call-blue);
+  box-shadow: 0 0 0 2px rgba(26,115,232,.15);
+}
+.config-form textarea { resize: vertical; min-height: 80px }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
 
-/* Inner accordions */
-.settings-accordion{border-top:1px solid var(--border-light);margin-top:4px}
-.settings-accordion summary{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;list-style:none;user-select:none;-webkit-user-select:none}
-.settings-accordion summary::-webkit-details-marker{display:none}
-.settings-accordion summary::after{content:'';width:7px;height:7px;border-right:2px solid var(--text3);border-bottom:2px solid var(--text3);transform:rotate(45deg);transition:transform .2s ease;flex-shrink:0}
-.settings-accordion[open] summary::after{transform:rotate(-135deg)}
-.accordion-body{padding:0 0 12px;display:flex;flex-direction:column;gap:10px}
+/* Accordion in lobby */
+.lobby-accordion { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px }
+.lobby-accordion summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.lobby-accordion summary::-webkit-details-marker { display: none }
+.lobby-accordion summary::after {
+  content: '';
+  width: 7px; height: 7px;
+  border-right: 2px solid var(--text3);
+  border-bottom: 2px solid var(--text3);
+  transform: rotate(45deg);
+  transition: transform .2s ease;
+}
+.lobby-accordion[open] summary::after { transform: rotate(-135deg) }
+.accordion-body { padding: 8px 0 4px; display: flex; flex-direction: column; gap: 10px }
+
+/* Join button */
+.btn-join {
+  background: var(--call-blue);
+  color: #202124;
+  border: none;
+  border-radius: 24px;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  font-family: inherit;
+  letter-spacing: .02em;
+  text-align: center;
+}
+.btn-join:hover { background: #aecbfa; transform: translateY(-1px) }
+.btn-join:active { transform: translateY(0) }
+.btn-join:disabled { opacity: .4; cursor: not-allowed; transform: none }
+
+/* Hint box (lobby) */
+.hint-box {
+  background: rgba(26,115,232,.04);
+  border-left: 3px solid var(--call-blue);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 14px;
+}
+.hint-box .ht { font-size: 11px; color: var(--call-blue); font-weight: 700; margin-bottom: 4px }
+.hint-box .hc { font-size: 12px; color: var(--text2); line-height: 1.6 }
+
+/* ============================================= */
+/* === CALL SCREEN (Google Meet style)       === */
+/* ============================================= */
+#screen-call {
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.call-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 20px;
+  gap: 16px;
+  font-size: 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+  min-height: 48px;
+}
+.call-title {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 15px;
+}
+.call-header-meta {
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text2);
+}
+.call-header-timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.call-participants {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.call-badge {
+  background: var(--surface2);
+  color: var(--text2);
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Main call area */
+.call-main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.call-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: var(--stage-bg);
+  border-radius: 12px;
+  margin: 8px;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.02) 1px, transparent 0);
+  background-size: 40px 40px;
+}
+
+/* AI Avatar (center) */
+.ai-avatar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatar-ring-wrapper {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.avatar-ring {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 5px;
+  background: var(--stage-surface);
+  transition: all .4s ease;
+}
+
+.avatar-ring.speaking {
+  background: conic-gradient(from 0deg, #34a853, transparent 30%, #34a853 50%, transparent 80%, #34a853);
+  animation: ring-rotate 2s linear infinite;
+  filter: drop-shadow(0 0 24px rgba(52,168,83,.4));
+}
+
+.avatar-ring.listening {
+  background: conic-gradient(from 0deg, #4285f4, transparent 40%, #4285f4 60%, transparent);
+  animation: ring-rotate 3s linear infinite;
+  filter: drop-shadow(0 0 16px rgba(66,133,244,.3));
+}
+
+.avatar-ring.thinking {
+  background: conic-gradient(from 0deg, #fbbc04, transparent 30%, #fbbc04 50%, transparent 80%, #fbbc04);
+  animation: ring-rotate 1.5s linear infinite;
+  filter: drop-shadow(0 0 16px rgba(251,188,4,.3));
+}
+
+@keyframes ring-rotate {
+  from { transform: rotate(0deg) }
+  to { transform: rotate(360deg) }
+}
+
+.ai-avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--stage-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72px;
+  position: relative;
+  overflow: hidden;
+}
+.ai-avatar-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,.06) 0%, transparent 60%);
+  border-radius: 50%;
+}
+
+/* Audio level glow ring (dynamic via JS) */
+.avatar-glow {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: all .1s;
+  pointer-events: none;
+}
+
+.ai-name-tag {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--stage-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ai-name-tag .persona-label {
+  font-size: 11px;
+  background: var(--stage-surface);
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: var(--stage-text2);
+  font-weight: 400;
+}
+
+.speaking-indicator {
+  font-size: 13px;
+  color: var(--stage-text2);
+  height: 20px;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.speaking-indicator.active { opacity: 1 }
+
+/* User PiP (bottom-right) */
+.pip-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 176px;
+  height: 132px;
+  border-radius: 12px;
+  background: var(--stage-bg);
+  border: 2px solid var(--stage-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.5);
+  transition: border-color .3s, box-shadow .3s;
+  z-index: 5;
+}
+.pip-container.user-speaking {
+  border-color: #4285f4;
+  box-shadow: 0 0 16px rgba(66,133,244,.3);
+}
+.pip-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5c6bc0, #7c4dff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.pip-name {
+  font-size: 12px;
+  color: var(--stage-text2);
+  font-weight: 500;
+}
+.pip-mic {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--stage-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+/* Live captions (bottom center overlay) */
+.live-captions {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.8);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  max-width: 600px;
+  text-align: center;
+  line-height: 1.5;
+  opacity: 0;
+  transition: opacity .3s;
+  z-index: 10;
+  pointer-events: none;
+}
+.live-captions.visible { opacity: 1 }
+.caption-sender { font-weight: 600; color: var(--call-blue); margin-right: 6px }
+
+/* Transcript side panel */
+.transcript-panel {
+  width: 360px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: width .25s ease, opacity .2s;
+  overflow: hidden;
+}
+.transcript-panel.hidden { width: 0; border-left: none; opacity: 0 }
+
+.transcript-header {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.transcript-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+.transcript-close:hover { color: var(--text) }
+
+.transcript-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.transcript-messages::-webkit-scrollbar { width: 3px }
+.transcript-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px }
+
+.t-msg { font-size: 13px; line-height: 1.55 }
+.t-msg .t-sender {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.t-msg.t-ai .t-sender { color: #1e8e3e }
+.t-msg.t-user .t-sender { color: #1a73e8 }
+.t-msg.t-system .t-sender { color: #e37400 }
+.t-msg .t-text { color: var(--text); word-break: break-word }
+.t-msg .t-text.live { opacity: .5; font-style: italic }
+.t-msg .t-time { font-size: 10px; color: var(--text3); margin-top: 3px }
+
+/* Bottom control bar */
+.call-controls {
+  padding: 12px 20px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 10;
+}
+.call-controls-center {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.ctrl-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+  position: relative;
+  font-family: inherit;
+}
+.ctrl-btn:hover { background: var(--surface3) }
+.ctrl-btn.active { background: #e8f0fe; color: var(--call-blue) }
+.ctrl-btn.muted { background: var(--call-red); color: #fff }
+.ctrl-btn-label {
+  position: absolute;
+  bottom: -20px;
+  font-size: 10px;
+  color: var(--text2);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.ctrl-end-call {
+  background: var(--call-red);
+  color: #fff;
+  width: 56px;
+  border-radius: 28px;
+  font-size: 20px;
+}
+.ctrl-end-call:hover { background: #d33b2c }
+
+.call-timer-bar {
+  position: absolute;
+  left: 20px;
+  font-size: 13px;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.call-timer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--call-red);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.3 } }
+
+/* ============================================= */
+/* === RESULTS SCREEN (Meeting Summary)      === */
+/* ============================================= */
+#screen-results {
+  flex-direction: column;
+  background: #f6f7f8;
+  overflow: hidden;
+  display: none;
+}
+#screen-results.active { display: block !important; }
+
+.results-wrapper {
+  max-width: 680px;
+  width: 92%;
+  margin: 0 auto;
+  padding: 40px 0 60px;
+}
+
+.results-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.results-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.results-meta {
+  font-size: 13px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.results-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Score hero */
+.score-hero {
+  text-align: center;
+  padding: 36px 24px;
+  background: var(--surface);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+.score-hero-value {
+  font-size: 72px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  background: linear-gradient(135deg, #e37400, #f9ab00);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.score-hero-label {
+  font-size: 14px;
+  color: var(--text2);
+  margin-top: 8px;
+  font-weight: 500;
+}
+.score-hero .streak-badge {
+  background: linear-gradient(135deg, #e37400, #f9ab00);
+  color: #fff;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+}
+.score-hero .title-badge {
+  background: #fef7e0;
+  border: 1px solid #f9ab00;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e37400;
+  display: inline-block;
+  margin-top: 8px;
+}
 
 /* Score bars */
-.score-preview{display:flex;flex-direction:column;gap:8px}
-.sb-item{display:flex;align-items:center;gap:8px;font-size:12px}
-.sb-item .n{color:var(--text2);width:72px;flex-shrink:0;font-weight:500}
-.sb-item .bg{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
-.sb-item .fl{height:100%;border-radius:3px;background:var(--accent);transition:width .8s ease}
-.sb-item .v{color:var(--text);width:24px;text-align:right;font-weight:700;font-size:13px}
-
-/* Hint box */
-.hint-box{background:rgba(0,122,255,.04);border:none;border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;padding:14px 16px}
-.hint-box .ht{font-size:11px;color:var(--accent);font-weight:700;margin-bottom:6px;letter-spacing:.04em}
-.hint-box .hc{font-size:13px;color:var(--text2);line-height:1.6}
-
-/* History */
-.history-list{max-height:200px;overflow-y:auto}
-.history-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:12px;color:var(--text2)}
-.history-item .hs{color:var(--text);font-weight:700}
-
-/* === CHAT AREA === */
-.chat-area{display:flex;flex-direction:column;flex:1;overflow:hidden;background:linear-gradient(180deg,var(--bg) 0%,#e8e8ed 100%)}
-.messages{flex:1;overflow-y:auto;padding:24px 20px;display:flex;flex-direction:column;gap:10px;max-width:800px;width:100%;margin:0 auto}
-.msg{display:flex;gap:10px;max-width:75%;animation:msgIn .3s ease-out}
-@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.msg.ai{align-self:flex-start}
-.msg.user{align-self:flex-end;flex-direction:row-reverse}
-.msg-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:var(--surface);box-shadow:var(--shadow-card)}
-.msg.ai .msg-av{background:var(--surface)}
-.msg.user .msg-av{background:linear-gradient(135deg,rgba(0,122,255,.12),rgba(88,86,214,.12))}
-.msg-bb{padding:12px 16px;border-radius:20px;font-size:14px;line-height:1.65}
-.msg.ai .msg-bb{background:var(--surface);color:var(--text);border-bottom-left-radius:6px;box-shadow:var(--shadow-card)}
-.msg.user .msg-bb{background:linear-gradient(135deg,var(--accent),#2d7ff9);color:#fff;border-bottom-right-radius:6px;box-shadow:0 2px 8px rgba(0,122,255,.2)}
-.msg-bb.live{opacity:.7;border:1px dashed var(--border)}
-.msg-t{font-size:10px;color:var(--text3);margin-top:4px;padding:0 6px}
-.msg.system{align-self:center;max-width:85%}
-.msg.system .msg-bb{background:rgba(255,149,0,.06);border:none;border-radius:10px;color:var(--gold);font-size:12px;text-align:center;box-shadow:none;font-weight:500}
-
-/* === CONTROLS === */
-.controls{padding:14px 20px 22px;background:var(--surface);border-top:1px solid var(--border-light);box-shadow:0 -2px 12px rgba(0,0,0,0.03);max-width:840px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:10px}
-.status-bar{display:flex;align-items:center;gap:8px}
-.status-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .3s;flex-shrink:0}
-.status-dot.listening{background:var(--green);box-shadow:0 0 6px rgba(52,199,89,.4);animation:pulse 2s infinite}
-.status-dot.speaking{background:var(--accent2);box-shadow:0 0 6px rgba(88,86,214,.4);animation:pulse 1.5s infinite}
-.status-dot.thinking{background:var(--gold);box-shadow:0 0 6px rgba(255,149,0,.4);animation:pulse 1s infinite}
-.status-text{font-size:12px;color:var(--text2);font-weight:500}
-.vol-bar{flex:1;height:3px;background:var(--border-light);border-radius:2px;overflow:hidden}
-.vol-fill{height:100%;background:var(--green);border-radius:2px;width:0%;transition:width .05s}
-canvas.waveform{width:100%;height:40px;border-radius:10px;background:linear-gradient(135deg,#1a1d2e,#252940);box-shadow:inset 0 1px 3px rgba(0,0,0,0.1)}
-.btn-row{display:flex;gap:10px}
-.btn{padding:10px 18px;border-radius:var(--radius);border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;gap:6px;font-family:inherit}
-.btn-start{background:linear-gradient(135deg,var(--warm) 0%,var(--gold) 100%);color:#fff;flex:1;justify-content:center;font-size:16px;padding:16px;border-radius:14px;box-shadow:0 4px 16px rgba(255,107,53,.25);letter-spacing:0.02em}
-.btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,107,53,.35)}
-.btn-start:active{transform:translateY(0);box-shadow:0 2px 8px rgba(255,107,53,.2)}
-.btn-start:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-.btn-stop{background:rgba(255,59,48,.06);border:1px solid rgba(255,59,48,.15);color:var(--red)}
-.btn-stop:hover{background:rgba(255,59,48,.12)}
-.btn-grade{background:rgba(255,149,0,.06);border:1px solid rgba(255,149,0,.15);color:var(--gold)}
-.btn-grade:hover{background:rgba(255,149,0,.12)}
-.btn-grade:disabled,.btn-stop:disabled{opacity:.35;cursor:not-allowed}
-
-/* === OVERLAYS === */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.25);display:none;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.overlay.show{display:flex}
-.result-card{background:var(--surface);border:none;border-radius:var(--radius-xl);padding:0;max-width:580px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:cardIn .35s ease-out}
-@keyframes cardIn{from{opacity:0;transform:scale(.93) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.result-card-header{background:linear-gradient(135deg,#fff5eb 0%,#fff0e0 100%);padding:28px 32px 20px;border-radius:var(--radius-xl) var(--radius-xl) 0 0;text-align:center}
-.result-score{font-size:60px;font-weight:900;color:var(--gold);letter-spacing:-0.04em;line-height:1}
-.result-label{font-size:13px;color:var(--text2);margin-top:6px;font-weight:500}
-.result-card-body{padding:24px 32px 32px}
-.result-section{margin-top:20px}
-.result-section h3{font-size:13px;color:var(--text2);font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border-light)}
-.result-comment{font-size:14px;line-height:1.7;color:var(--text)}
-.btn-close{width:100%;margin-top:24px;background:linear-gradient(135deg,var(--accent),#2d7ff9);color:#fff;border:none;padding:14px;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;box-shadow:0 4px 12px rgba(0,122,255,.2)}
-.btn-close:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,122,255,.25)}
-
-/* Badges */
-.streak-badge{background:linear-gradient(135deg,#ff9500,#ffcc00);color:#fff;border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 6px rgba(255,149,0,.25)}
-.title-badge{background:linear-gradient(135deg,#fff8ef,#fff3e0);border:1px solid rgba(255,149,0,.2);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--gold)}
-
-/* === RESPONSIVE === */
-@media(max-width:600px){
-  header{padding:10px 16px}
-  header .logo{font-size:15px}
-  header .meta{gap:8px;font-size:11px}
-  .settings-toggle{padding:12px 16px}
-  .settings-body{padding:0 16px 16px}
-  .settings-essential{grid-template-columns:1fr}
-  .messages{padding:16px}
-  .msg{max-width:88%}
-  .controls{padding:10px 16px 16px}
-  .result-card-header{padding:24px 20px 16px}
-  .result-card-body{padding:20px}
-  .result-card{border-radius:var(--radius-lg)}
+.results-card {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
 }
-@media(min-width:768px){
-  .messages{padding:32px 24px}
+.results-card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
 }
 
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sb-item { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-bottom: 12px }
+.sb-item .n { color: var(--text2); width: 80px; flex-shrink: 0; font-weight: 500 }
+.sb-item .bg { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden }
+.sb-item .fl { height: 100%; border-radius: 3px; background: var(--call-blue); transition: width .8s ease }
+.sb-item .v { color: var(--text); width: 24px; text-align: right; font-weight: 700; font-size: 14px }
+.sb-item .drill-btn {
+  background: none;
+  border: 1px solid var(--call-blue);
+  color: var(--call-blue);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+.sb-item .drill-btn:hover { background: rgba(26,115,232,.08) }
+
+.evidence-line { font-size: 11px; padding-left: 90px; margin-top: -8px; margin-bottom: 8px }
+.evidence-line.good { color: var(--green) }
+.evidence-line.bad { color: var(--red) }
+.evidence-line.neutral { color: var(--text2) }
+
+.result-comment { font-size: 14px; line-height: 1.7; color: var(--text) }
+
+/* Timeline */
+.timeline-item {
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.timeline-eval { font-weight: 600; margin-right: 6px }
+.timeline-comment { color: var(--text2); font-size: 12px; margin-top: 4px }
+
+/* Drill buttons */
+.drill-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  background: #fce8e6;
+  border: 1px solid rgba(234,67,53,.2);
+  color: var(--red);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background .15s;
+}
+.drill-button:hover { background: #f8d7d4 }
+
+/* Results actions */
+.results-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+.results-actions .btn-primary {
+  flex: 1;
+  background: var(--call-blue);
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.results-actions .btn-primary:hover { background: #1567d3 }
+.results-actions .btn-secondary {
+  flex: 1;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.results-actions .btn-secondary:hover { background: var(--surface2) }
+
+/* ============================================= */
+/* === USAGE DASHBOARD OVERLAY               === */
+/* ============================================= */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.3);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+.overlay.show { display: flex }
+
+.modal-card {
+  background: var(--surface);
+  border-radius: 16px;
+  max-width: 700px;
+  width: 92%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn .25s ease-out;
+}
+@keyframes modalIn { from { opacity:0; transform:scale(.95) translateY(12px) } to { opacity:1; transform:scale(1) translateY(0) } }
+
+.modal-header {
+  padding: 24px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h2 { font-size: 18px; font-weight: 700; color: var(--text) }
+.modal-body { padding: 24px }
+.modal-close {
+  width: 100%;
+  margin-top: 20px;
+  background: var(--surface2);
+  color: var(--text);
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s;
+}
+.modal-close:hover { background: var(--surface3) }
+
+/* Score preview bars (lobby) */
+.score-preview { display: flex; flex-direction: column; gap: 6px }
+.sp-item { display: flex; align-items: center; gap: 8px; font-size: 11px }
+.sp-item .n { color: var(--text2); width: 72px; flex-shrink: 0 }
+.sp-item .bg { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden }
+.sp-item .fl { height: 100%; border-radius: 2px; background: var(--call-blue); transition: width .8s ease }
+.sp-item .v { color: var(--text); width: 20px; text-align: right; font-weight: 700; font-size: 11px }
+
+/* History (lobby) */
+.history-list { max-height: 160px; overflow-y: auto }
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text2);
+}
+.history-item .hs { color: var(--text); font-weight: 700 }
+
+/* Trend chart */
+.trend-chart-wrap {
+  height: 140px;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* ============================================= */
+/* === RESPONSIVE                            === */
+/* ============================================= */
+@media (max-width: 768px) {
+  .lobby-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 60px 0 20px;
+  }
+  .lobby-preview { aspect-ratio: 16/9; max-height: 220px }
+  .lobby-settings { max-height: none }
+  .form-row { grid-template-columns: 1fr }
+
+  .call-stage { padding: 20px }
+  .avatar-ring-wrapper, .avatar-ring { width: 140px; height: 140px }
+  .ai-avatar-inner { font-size: 52px }
+  .pip-container { width: 120px; height: 90px; bottom: 12px; right: 12px }
+  .pip-avatar { width: 36px; height: 36px; font-size: 18px }
+  .pip-name { font-size: 10px }
+
+  .transcript-panel { position: absolute; right: 0; top: 0; bottom: 0; width: 280px; z-index: 20 }
+  .transcript-panel.hidden { width: 0 }
+
+  .live-captions { max-width: 85%; font-size: 13px }
+
+  .call-timer-bar { position: static; margin-right: auto }
+  .call-controls { flex-wrap: wrap; gap: 8px }
+
+  .results-wrapper { padding: 24px 0 40px }
+  .score-hero-value { font-size: 56px }
+  .results-actions { flex-direction: column }
+}
+
+@media (max-width: 480px) {
+  .lobby-header { padding: 10px 16px }
+  .lobby-container { width: 96% }
+  .ctrl-btn { width: 42px; height: 42px; font-size: 16px }
+  .ctrl-end-call { width: 50px }
+}
+
+/* Screen transition animation */
+@keyframes screenFadeIn {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+.screen.active {
+  animation: screenFadeIn .3s ease;
+}
 </style>
 </head>
 <body>
 
-<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+<!-- =========================================== -->
+<!-- LOBBY SCREEN                                -->
+<!-- =========================================== -->
+<div id="screen-lobby" class="screen active">
+  <div class="lobby-header">
+    <div class="lobby-logo">AI営業ロープレ <span>v2</span></div>
+    <div class="lobby-header-actions">
+      <button onclick="showUsageDashboard()" class="lobby-header-btn">利用状況</button>
+    </div>
+  </div>
 
-<header>
-<span class="logo">AI営業ロープレ</span>
-<div class="meta">
-  <span id="turnCount">0往復</span>
-  <span id="sessionTimer">00:00</span>
-  <span id="streakBadge"></span>
-  <span id="titleBadge"></span>
-  <button onclick="showUsageDashboard()" class="header-btn">利用状況</button>
+  <div class="lobby-container">
+    <!-- Camera Preview -->
+    <div class="lobby-preview">
+      <div class="lobby-preview-bg"></div>
+      <div class="lobby-avatar" id="lobbyAvatar">🧑‍💼</div>
+      <div class="lobby-user-name" id="lobbyUserName">担当者名を入力</div>
+      <div class="lobby-mic-test">
+        <span>🎤</span>
+        <div class="lobby-mic-bar"><div class="lobby-mic-fill" id="lobbyMicFill"></div></div>
+        <span id="lobbyMicStatus">待機中</span>
+      </div>
+      <div class="lobby-preview-controls">
+        <button class="preview-ctrl-btn" id="lobbyMicBtn" onclick="toggleLobbyMic()" title="マイクテスト">🎤</button>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="lobby-settings">
+      <h2>ロープレに参加</h2>
+      <div class="meeting-info" id="meetingInfo">AI顧客との営業ロールプレイ</div>
+
+      <div class="config-form">
+        <div class="form-row">
+          <div><label>担当者名</label><input type="text" id="salesName" placeholder="例: 高橋" oninput="updateLobbyName()"></div>
+          <div><label>商材</label>
+            <select id="product">
+              <option value="ISAI">ISAI（AIマーケタースクール）</option>
+              <option value="Adoafi">Adoafi</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div><label>顧客ペルソナ</label>
+            <select id="persona" onchange="onPersonaChange()">
+              <option value="price">「高い」と言う顧客</option>
+              <option value="compare">「他と比べたい」顧客</option>
+              <option value="busy">「忙しくて時間がない」顧客</option>
+              <option value="spouse">「配偶者に相談したい」顧客</option>
+              <option value="doubt">「本当に効果あるの？」顧客</option>
+              <option value="custom">実商談トレース（↓ログ貼付）</option>
+            </select>
+          </div>
+          <div><label>難易度</label>
+            <select id="difficulty">
+              <option value="easy">易（乗りやすい顧客）</option>
+              <option value="medium" selected>中（普通の顧客）</option>
+              <option value="hard">難（頑固な顧客）</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="customPersonaBox" style="display:none">
+          <label>失注商談ログを貼り付け</label>
+          <textarea id="customTranscript" placeholder="商談の議事録、文字起こし、またはGAS FBツールの総評を貼り付けてください"></textarea>
+        </div>
+      </div>
+
+      <div class="hint-box">
+        <div class="ht">今回の練習ポイント</div>
+        <div class="hc" id="hintText"></div>
+      </div>
+
+      <!-- Advanced settings -->
+      <details class="lobby-accordion">
+        <summary>詳細設定</summary>
+        <div class="accordion-body config-form">
+          <div><label>克服すべき弱点</label>
+            <select id="weakPoint" onchange="updateHint()">
+              <option value="anchoring">アンカリング（価格提示）</option>
+              <option value="authority">権威性（選ぶ側スタンス）</option>
+              <option value="loss_aversion">損失回避（現状リスク指摘）</option>
+              <option value="reframing">リフレーミング（スクール→研修）</option>
+              <option value="closing">クロージング（言い切り誘導）</option>
+              <option value="hearing">ヒアリング（課題の深堀り）</option>
+              <option value="rapport">ラポール（信頼構築）</option>
+              <option value="objection">反論処理（切り返し力）</option>
+              <option value="tempo">テンポ（会話のリズム）</option>
+              <option value="proposal">提案力（解決策の具体性）</option>
+            </select>
+          </div>
+          <div><label>シナリオ</label>
+            <select id="scenario">
+              <option value="full">フル商談（自由会話）</option>
+              <option value="opening">冒頭5分（アイスブレイク→ヒアリング）</option>
+              <option value="price_objection">価格提示後の切り返し</option>
+              <option value="closing_3min">クロージング最後の3分</option>
+            </select>
+          </div>
+          <div><label>Gemini API Key</label><input type="password" id="apiKey" placeholder="AIzaSy..."></div>
+          <div><label>モデル</label>
+            <select id="modelName">
+              <option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio（約44円/10分）</option>
+            </select>
+          </div>
+          <div><label><input type="checkbox" id="saveKey" style="width:auto;margin-right:6px">API Keyを保存する</label></div>
+        </div>
+      </details>
+
+      <!-- Score & History -->
+      <details class="lobby-accordion">
+        <summary>スコア & 履歴</summary>
+        <div class="accordion-body">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--call-text2);margin-bottom:6px">前回スコア</div>
+            <div class="score-preview" id="scorePreview"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--call-text2);margin-bottom:6px">スコアトレンド</div>
+            <div class="trend-chart-wrap"><canvas id="trendChart"></canvas></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--call-text2);margin-bottom:6px">練習履歴</div>
+            <div class="history-list" id="historyList"><span style="font-size:11px;color:var(--call-text2)">まだ履歴なし</span></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- GAS Integration -->
+      <details class="lobby-accordion">
+        <summary>GAS商談FB連携</summary>
+        <div class="accordion-body config-form">
+          <div><label>GAS Web App URL</label><input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/..." style="font-size:12px"></div>
+          <button onclick="fetchLossData()" style="background:rgba(138,180,248,.08);border:1px solid rgba(138,180,248,.2);color:var(--call-blue);padding:8px 12px;font-size:12px;width:100%;border-radius:8px;cursor:pointer;font-family:inherit">失注データ取得</button>
+          <select id="lossSelect" style="display:none;width:100%;background:var(--call-bg);border:1px solid var(--call-border);color:var(--call-text);border-radius:8px;padding:10px;font-size:12px"></select>
+        </div>
+      </details>
+
+      <button class="btn-join" id="btnJoin" onclick="joinMeeting()">ミーティングに参加</button>
+    </div>
+  </div>
 </div>
+
+<!-- =========================================== -->
+<!-- CALL SCREEN                                 -->
+<!-- =========================================== -->
+<div id="screen-call" class="screen">
+  <div class="call-header">
+    <div class="call-title">AI営業ロープレ</div>
+    <div class="call-header-meta">
+      <span id="callHeaderTimer" class="call-header-timer">00:00</span>
+      <span class="call-participants">👥 <span id="callParticipants">2</span></span>
+      <span class="call-badge" id="callScenarioBadge"></span>
+    </div>
+  </div>
+
+  <div class="call-main">
+    <div class="call-stage">
+      <!-- AI Avatar (center) -->
+      <div class="ai-avatar-container" id="aiAvatarContainer">
+        <div class="avatar-ring-wrapper">
+          <div class="avatar-glow" id="avatarGlow"></div>
+          <div class="avatar-ring" id="aiAvatarRing">
+            <div class="ai-avatar-inner" id="aiAvatarInner">👤</div>
+          </div>
+        </div>
+        <div class="ai-name-tag">
+          <span id="aiNameDisplay">顧客（AI）</span>
+          <span class="persona-label" id="aiPersonaLabel"></span>
+        </div>
+        <div class="speaking-indicator" id="speakingIndicator">発話中...</div>
+      </div>
+
+      <!-- User PiP -->
+      <div class="pip-container" id="pipContainer">
+        <div class="pip-avatar" id="pipAvatar">🧑‍💼</div>
+        <div class="pip-name" id="pipName">あなた</div>
+        <div class="pip-mic" id="pipMic">🎤</div>
+      </div>
+
+      <!-- Live Captions -->
+      <div class="live-captions" id="liveCaptions">
+        <span class="caption-sender" id="captionSender"></span>
+        <span id="captionText"></span>
+      </div>
+    </div>
+
+    <!-- Transcript Panel -->
+    <div class="transcript-panel hidden" id="transcriptPanel">
+      <div class="transcript-header">
+        <span>字幕・会話ログ</span>
+        <button class="transcript-close" onclick="toggleTranscript()">✕</button>
+      </div>
+      <div class="transcript-messages" id="transcriptMessages"></div>
+    </div>
+  </div>
+
+  <!-- Control Bar -->
+  <div class="call-controls">
+    <div class="call-timer-bar">
+      <div class="call-timer-dot"></div>
+      <span id="callBarTimer">00:00</span>
+    </div>
+    <div class="call-controls-center">
+      <button class="ctrl-btn" id="btnMicToggle" onclick="toggleMic()" title="マイク">
+        🎤
+        <span class="ctrl-btn-label">マイク</span>
+      </button>
+      <button class="ctrl-end-call ctrl-btn" id="btnEndCall" onclick="endCall()" title="通話終了">
+        📞
+        <span class="ctrl-btn-label">退出</span>
+      </button>
+      <button class="ctrl-btn" id="btnTranscript" onclick="toggleTranscript()" title="字幕">
+        💬
+        <span class="ctrl-btn-label">字幕</span>
+      </button>
+      <button class="ctrl-btn" id="btnCallGrade" onclick="gradeFromCall()" title="採点" disabled>
+        📊
+        <span class="ctrl-btn-label">採点</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================== -->
+<!-- RESULTS SCREEN (SalesAI Review)             -->
+<!-- =========================================== -->
+<div id="screen-results" class="screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden font-display" style="font-family:'Inter','Noto Sans JP',sans-serif">
+<div class="flex h-full grow flex-col">
+
+<!-- Results Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 bg-white px-6 py-3 lg:px-10">
+  <div class="flex items-center gap-8">
+    <div class="flex items-center gap-3 text-primary">
+      <div class="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+        <span class="material-symbols-outlined text-primary" style="font-size:20px">analytics</span>
+      </div>
+      <h2 class="text-slate-900 text-lg font-bold leading-tight tracking-tight">SalesAI Review</h2>
+    </div>
+    <div class="hidden md:flex items-center gap-6">
+      <a class="text-primary text-sm font-bold border-b-2 border-primary pb-1 cursor-pointer">セッション分析</a>
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <button class="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all" id="btnExportReport">
+      <span class="truncate">レポートを書き出す</span>
+    </button>
+    <button class="flex cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-all" onclick="backToLobby()">
+      <span class="material-symbols-outlined mr-1" style="font-size:18px">arrow_back</span> 新しいセッション
+    </button>
+  </div>
 </header>
 
-<main>
-<details class="sidebar" open>
-  <summary class="settings-toggle">設定</summary>
-  <div class="settings-body">
+<!-- Main Content -->
+<main class="flex-1 max-w-7xl mx-auto w-full p-4 lg:p-8 space-y-6 overflow-y-auto" style="max-height:calc(100vh - 57px);max-height:calc(100dvh - 57px)">
 
-    <!-- Essential settings (2x2 grid) -->
-    <div class="settings-essential config-form">
-      <div><label>担当者名</label><input type="text" id="salesName" placeholder="例: 高橋"></div>
-      <div><label>商材</label>
-        <select id="product">
-          <option value="ISAI">ISAI（AIマーケタースクール）</option>
-          <option value="Adoafi">Adoafi</option>
-        </select></div>
-      <div><label>顧客ペルソナ</label>
-        <select id="persona">
-          <option value="price">「高い」と言う顧客</option>
-          <option value="compare">「他と比べたい」顧客</option>
-          <option value="busy">「忙しくて時間がない」顧客</option>
-          <option value="spouse">「配偶者に相談したい」顧客</option>
-          <option value="doubt">「本当に効果あるの？」顧客</option>
-          <option value="custom">実商談トレース（↓ログ貼付）</option>
-        </select></div>
-      <div><label>難易度</label>
-        <select id="difficulty">
-          <option value="easy">易（乗りやすい顧客）</option>
-          <option value="medium" selected>中（普通の顧客）</option>
-          <option value="hard">難（頑固な顧客）</option>
-        </select></div>
-    </div>
+  <!-- Breadcrumb -->
+  <div class="flex flex-wrap items-center gap-2 text-sm" id="resultsBreadcrumb">
+    <a class="text-slate-500 hover:text-primary cursor-pointer" onclick="backToLobby()">セッション履歴</a>
+    <span class="material-symbols-outlined text-sm text-slate-400">chevron_right</span>
+    <span class="text-slate-900 font-semibold" id="resultsBreadcrumbTitle">分析結果</span>
+  </div>
 
-    <div id="customPersonaBox" style="display:none" class="config-form">
-      <label>失注商談ログを貼り付け</label>
-      <textarea id="customTranscript" rows="5" placeholder="商談の議事録、文字起こし、またはGAS FBツールの総評を貼り付けてください。AIがこの顧客の話し方・思考パターンを再現します。" style="width:100%;background:var(--surface2);border:1px solid var(--border-light);color:var(--text);border-radius:10px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none"></textarea>
-    </div>
+  <!-- Top Row: Session Info + Score -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <!-- Accordion: 詳細設定 -->
-    <details class="settings-accordion">
-      <summary>詳細設定</summary>
-      <div class="accordion-body config-form">
-        <div><label>克服すべき弱点</label>
-          <select id="weakPoint">
-            <option value="anchoring">アンカリング（価格提示）</option>
-            <option value="authority">権威性（選ぶ側スタンス）</option>
-            <option value="loss_aversion">損失回避（現状リスク指摘）</option>
-            <option value="reframing">リフレーミング（スクール→研修）</option>
-            <option value="closing">クロージング（言い切り誘導）</option>
-            <option value="hearing">ヒアリング（課題の深堀り）</option>
-            <option value="rapport">ラポール（信頼構築）</option>
-            <option value="objection">反論処理（切り返し力）</option>
-            <option value="tempo">テンポ（会話のリズム）</option>
-            <option value="proposal">提案力（解決策の具体性）</option>
-          </select></div>
-        <div><label>シナリオ</label>
-          <select id="scenario">
-            <option value="full">フル商談（自由会話）</option>
-            <option value="opening">冒頭5分（アイスブレイク→ヒアリング）</option>
-            <option value="price_objection">価格提示後の切り返し</option>
-            <option value="closing_3min">クロージング最後の3分</option>
-          </select></div>
-        <div><label>Gemini API Key</label><input type="password" id="apiKey" placeholder="AIzaSy..."></div>
-        <div><label>モデル</label>
-          <select id="modelName">
-            <option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio（約44円/10分）</option>
-          </select></div>
-        <div><label><input type="checkbox" id="saveKey" style="width:auto;margin-right:6px">API Keyを保存する</label></div>
-      </div>
-    </details>
+    <!-- Left: Session replay area (2 cols) -->
+    <div class="lg:col-span-2 space-y-4">
 
-    <!-- Accordion: スコア & 履歴 -->
-    <details class="settings-accordion">
-      <summary>スコア & 履歴</summary>
-      <div class="accordion-body">
-        <div>
-          <div class="sh" style="margin-bottom:8px">スコア推移(10軸)</div>
-          <div class="score-preview" id="scorePreview"></div>
+      <!-- Session Info Card -->
+      <div class="relative bg-slate-900 rounded-xl overflow-hidden shadow-xl border border-slate-800" style="aspect-ratio:16/9;min-height:200px">
+        <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-6" id="resultSessionVisual">
+          <div class="text-6xl mb-3" id="resultAvatarEmoji">🧑‍💼</div>
+          <p class="text-white/80 text-base font-semibold" id="resultPersonaName"></p>
+          <p class="text-white/40 text-sm mt-1" id="resultSessionMeta2"></p>
         </div>
-        <div>
-          <div class="sh" style="margin-bottom:8px">スコアトレンド</div>
-          <div style="height:160px;background:var(--surface2);border-radius:var(--radius);padding:8px"><canvas id="trendChart"></canvas></div>
-        </div>
-        <div class="hint-box"><div class="ht">このロープレの目標</div><div class="hc" id="hintText"></div></div>
-        <div>
-          <div class="sh" style="margin-bottom:8px">練習履歴</div>
-          <div class="history-list" id="historyList"><span style="font-size:12px;color:var(--text2)">まだ履歴なし</span></div>
+        <!-- Timeline bar overlay -->
+        <div class="absolute inset-x-0 bottom-0 px-6 py-4 bg-gradient-to-t from-black/80 to-transparent">
+          <div class="flex items-center gap-4 mb-2">
+            <span class="text-white text-xs font-medium">00:00</span>
+            <div class="relative flex-1 h-1.5 rounded-full bg-white/20">
+              <div class="absolute left-0 top-0 h-full rounded-full bg-primary" id="resultProgressBar" style="width:100%"></div>
+            </div>
+            <span class="text-white text-xs font-medium" id="resultDuration">--:--</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-white/70 text-xs">
+              <span class="material-symbols-outlined" style="font-size:16px">schedule</span>
+              <span id="resultDate"></span>
+              <span class="mx-2 text-white/30">|</span>
+              <span class="material-symbols-outlined" style="font-size:16px">swap_horiz</span>
+              <span id="resultTurns"></span>往復
+            </div>
+            <div class="flex items-center gap-2" id="resultStreakArea"></div>
+          </div>
         </div>
       </div>
-    </details>
 
-    <!-- Accordion: GAS連携 -->
-    <details class="settings-accordion">
-      <summary>GAS商談FB連携</summary>
-      <div class="accordion-body config-form">
-        <div><label>GAS Web App URL</label><input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/..." style="font-size:12px"></div>
-        <button onclick="fetchLossData()" class="btn" style="background:rgba(0,122,255,.06);border:1px solid rgba(0,122,255,.15);color:var(--accent);padding:8px 12px;font-size:12px;width:100%">失注データ取得</button>
-        <select id="lossSelect" style="display:none;width:100%;background:var(--surface2);border:1px solid var(--border-light);color:var(--text);border-radius:10px;padding:10px;font-size:12px"></select>
+      <!-- Phase Markers -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm overflow-x-auto" id="resultPhaseMarkers">
+        <div class="flex gap-3 min-w-max" id="resultPhaseContainer">
+          <!-- Populated by JS -->
+        </div>
       </div>
-    </details>
-
-  </div>
-</details>
-
-<div class="chat-area">
-  <div class="messages" id="messages">
-    <div style="text-align:center;color:var(--text2);font-size:13px;margin-top:40px">設定を確認して「ロープレ開始」を押してください</div>
-  </div>
-  <div class="controls">
-    <div class="status-bar">
-      <div class="status-dot" id="statusDot"></div>
-      <span class="status-text" id="statusText">待機中</span>
-      <div class="vol-bar"><div class="vol-fill" id="volFill"></div></div>
     </div>
-    <canvas class="waveform" id="waveCanvas"></canvas>
-    <div class="btn-row">
-      <button class="btn btn-start" id="btnStart" onclick="startSession()">ロープレ開始</button>
-      <button class="btn btn-stop" id="btnStop" onclick="stopSession()" disabled>終了</button>
-      <button class="btn btn-grade" id="btnGrade" onclick="gradeSession()" disabled>採点</button>
+
+    <!-- Right: Performance Score (1 col) -->
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
+      <h3 class="text-slate-900 font-bold mb-4 w-full text-left flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary filled">stars</span> パフォーマンススコア
+      </h3>
+      <!-- Circular Score -->
+      <div class="relative w-48 h-48 flex items-center justify-center mb-6">
+        <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#f1f5f9" stroke-width="12"/>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#137fec" stroke-width="12" stroke-linecap="round"
+            stroke-dasharray="326.73" id="resultScoreArc" stroke-dashoffset="326.73"/>
+        </svg>
+        <div class="text-center z-10">
+          <span class="text-5xl font-extrabold text-slate-900 leading-none" id="resultScore">--</span>
+          <p class="text-sm font-medium text-slate-500 mt-1" id="resultScoreLabel">---</p>
+        </div>
+      </div>
+      <!-- Sub-score grid (top 4) -->
+      <div class="grid grid-cols-2 gap-3 w-full" id="resultTopScores">
+        <!-- Populated by JS -->
+      </div>
     </div>
   </div>
-</div>
+
+  <!-- Bottom Row: Transcript + Radar + Coaching -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Transcript Panel -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col" style="height:500px">
+      <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+        <h3 class="font-bold flex items-center gap-2 text-sm">
+          <span class="material-symbols-outlined text-primary" style="font-size:20px">notes</span> 文字起こし
+        </h3>
+        <span class="text-xs text-slate-400" id="resultTranscriptCount"></span>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-5" id="resultTranscript">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Competency Radar -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col" style="height:500px">
+      <div class="p-4 border-b border-slate-100">
+        <h3 class="font-bold flex items-center gap-2 text-sm">
+          <span class="material-symbols-outlined text-primary" style="font-size:20px">analytics</span> コンピテンシー分析
+        </h3>
+      </div>
+      <div class="flex-1 p-4 flex flex-col justify-around">
+        <!-- Radar Chart SVG -->
+        <div class="relative w-full aspect-square max-w-[260px] mx-auto" id="resultRadarContainer">
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-full h-full border border-slate-200 rounded-full"></div>
+            <div class="absolute w-3/4 h-3/4 border border-slate-200 rounded-full"></div>
+            <div class="absolute w-1/2 h-1/2 border border-slate-200 rounded-full"></div>
+            <div class="absolute w-1/4 h-1/4 border border-slate-200 rounded-full"></div>
+          </div>
+          <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 100" id="resultRadarSvg">
+            <polygon class="fill-primary/20 stroke-primary" stroke-width="1" points="" id="resultRadarPolygon"/>
+          </svg>
+          <!-- Labels positioned around the radar -->
+          <div id="resultRadarLabels"></div>
+        </div>
+        <!-- Stats under radar -->
+        <div class="space-y-2 mt-3" id="resultCompetencyStats">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Coaching Insights -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col" style="height:500px">
+      <div class="p-4 border-b border-slate-100">
+        <h3 class="font-bold flex items-center gap-2 text-sm">
+          <span class="material-symbols-outlined text-primary" style="font-size:20px">auto_awesome</span> AIコーチング・インサイト
+        </h3>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-4" id="resultCoachingInsights">
+        <!-- Populated by JS -->
+      </div>
+      <div class="p-4 border-t border-slate-100">
+        <button class="w-full py-2.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm rounded-lg transition-colors" id="btnDrillFromResults" onclick="drillFromResults()">
+          弱点ピンポイント練習を開始
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden fields for backward compatibility -->
+  <div style="display:none">
+    <div id="resultsMeta"></div>
+    <div id="streakBadgeResult"></div>
+    <div id="titleBadgeResult"></div>
+    <div id="resultSubScores"></div>
+    <div id="resultComment"></div>
+    <div id="idealSection"><div id="idealResponse"></div></div>
+    <div id="timelineSection"><div id="timelineContent"></div></div>
+    <div id="drillSection"><div id="drillButtons"></div></div>
+  </div>
+
 </main>
-
-<div class="overlay" id="overlay">
-<div class="result-card">
-  <div class="result-card-header">
-    <div class="result-score" id="resultScore">--</div>
-    <div class="result-label">ロープレ採点（100点満点）</div>
-  </div>
-  <div class="result-card-body">
-    <div class="result-section"><h3>10軸スコア</h3><div id="resultSubScores"></div></div>
-    <div class="result-section"><h3>AIコーチからのフィードバック</h3><div class="result-comment" id="resultComment"></div></div>
-    <div class="result-section" id="idealSection" style="display:none"><h3>理想のトーク例</h3><div class="result-comment" id="idealResponse"></div></div>
-    <div class="result-section" id="timelineSection" style="display:none"><h3>タイムライン振り返り</h3><div class="result-comment" id="timelineContent"></div></div>
-    <div class="result-section" id="drillSection" style="display:none"><h3>弱点ピンポイント練習</h3><div id="drillButtons"></div></div>
-    <button class="btn-close" onclick="closeResult()">閉じる</button>
-  </div>
+</div>
 </div>
 </div>
 
+<!-- =========================================== -->
+<!-- USAGE DASHBOARD OVERLAY                     -->
+<!-- =========================================== -->
 <div class="overlay" id="usageOverlay">
-<div class="result-card" style="max-width:700px">
-  <div class="result-card-header" style="background:linear-gradient(135deg,#eef2ff 0%,#e8ecf8 100%)">
-    <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">月別利用状況</h2>
-  </div>
-  <div class="result-card-body">
-    <div style="display:flex;gap:8px;margin-bottom:12px;justify-content:center">
-      <select id="usageMonth" onchange="renderUsageDashboard()" style="background:var(--surface);border:1px solid var(--border-light);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;box-shadow:var(--shadow-sm)"></select>
-      <button onclick="exportUsageCSV()" class="btn" style="background:var(--accent);color:#fff;padding:6px 12px;font-size:11px">CSV出力</button>
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>月別利用状況</h2>
     </div>
-    <div id="usageTable"></div>
-    <button class="btn-close" onclick="document.getElementById('usageOverlay').classList.remove('show')">閉じる</button>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:16px;justify-content:center">
+        <select id="usageMonth" onchange="renderUsageDashboard()" style="background:var(--call-bg);border:1px solid var(--call-border);color:var(--call-text);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit"></select>
+        <button onclick="exportUsageCSV()" style="background:var(--call-blue);color:#202124;border:none;padding:6px 14px;font-size:12px;border-radius:8px;cursor:pointer;font-weight:600;font-family:inherit">CSV出力</button>
+      </div>
+      <div id="usageTable"></div>
+      <button class="modal-close" onclick="document.getElementById('usageOverlay').classList.remove('show')">閉じる</button>
+    </div>
   </div>
-</div>
 </div>
 
 <script>
@@ -343,39 +1501,44 @@ const PERSONAS={
 };
 const DIFFICULTY={easy:'あなたは比較的乗りやすい顧客です。良い提案にはすぐ前のめりに反応します。しかし最低限の質問はします。',medium:'あなたはリアルな顧客です。簡単には乗らないが、上手いリフレーミングには反応します。',hard:'あなたは非常に頑固な顧客です。何を言われても簡単には納得しません。論理的に完璧な説明だけに少し心が動きます。常に反論を探します。'};
 const SCENARIOS={full:'自由に会話してください。',opening:'商談の冒頭5分を想定。自己紹介→ヒアリング→課題の深堀りまで。まだ商品提案はしないフェーズ。',price_objection:'すでに商品説明は終わっている。価格を聞いて「高い」と反応した直後から会話を始めてください。',closing_3min:'商談の終盤。顧客は興味はあるが決断を迷っている状態。ここから3分でクロージングまで持っていく練習。'};
+const SCENARIO_LABELS={full:'フル商談',opening:'冒頭5分',price_objection:'価格切り返し',closing_3min:'CL 3分'};
 const SUB_NAMES={authority:'権威性',loss_aversion:'損失回避',reframing:'リフレーミング',anchoring:'アンカー',closing:'クロージング',hearing:'ヒアリング',rapport:'ラポール',objection:'反論処理',tempo:'テンポ',proposal:'提案力'};
-const ALL_SUBS = Object.keys(SUB_NAMES);
+const ALL_SUBS=Object.keys(SUB_NAMES);
 
 let ws=null,audioContext=null,processor=null,mediaStream=null,sessionActive=false;
 let conversationLog=[],timerInterval=null,startTime=null,volumeAnimFrame=null,analyserNode=null;
 let turnCount=0,playbackCtx=null,currentSource=null,silenceTimer=null;
 let mediaRecorder=null,recordedChunks=[];
-let waveCtx=null,waveData=null;
-
-// Live transcript bubble state
 let liveAiBubble=null,liveAiText='';
 let liveUserBubble=null,liveUserText='';
 let turnHadAudio=false;
-
-// Immediate audio scheduling state
 let scheduledSources=[];
 let nextPlayTime=0;
+let lobbyMicStream=null,lobbyAudioCtx=null,lobbyAnalyser=null;
+let captionTimeout=null;
+let worstWeakPoint=null;
+
+// === SCREEN MANAGEMENT ===
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>{
+    s.classList.remove('active');
+  });
+  const el=document.getElementById('screen-'+name);
+  if(el) el.classList.add('active');
+}
 
 // === INIT ===
-document.getElementById('weakPoint').addEventListener('change',updateHint);
-document.getElementById('persona').addEventListener('change',()=>{
-  document.getElementById('customPersonaBox').style.display = document.getElementById('persona').value==='custom'?'block':'none';
-});
 updateHint();
 initScoreBars();
 loadApiKey();
 loadHistory();
-updateStreak();
 
 function initScoreBars(){
-  const el=document.getElementById('scorePreview');el.innerHTML='';
+  const el=document.getElementById('scorePreview');
+  if(!el)return;
+  el.innerHTML='';
   ALL_SUBS.forEach(k=>{
-    el.innerHTML+=`<div class="sb-item"><div class="n">${SUB_NAMES[k]}</div><div class="bg"><div class="fl" id="bar_${k}" style="width:50%"></div></div><div class="v" id="val_${k}">-</div></div>`;
+    el.innerHTML+=`<div class="sp-item"><div class="n">${SUB_NAMES[k]}</div><div class="bg"><div class="fl" id="bar_${k}" style="width:50%"></div></div><div class="v" id="val_${k}">-</div></div>`;
   });
 }
 
@@ -383,51 +1546,127 @@ function updateHint(){document.getElementById('hintText').textContent=HINTS[docu
 function loadApiKey(){const k=localStorage.getItem('rp_apikey');if(k){document.getElementById('apiKey').value=k;document.getElementById('saveKey').checked=true}}
 function saveApiKey(){if(document.getElementById('saveKey').checked)localStorage.setItem('rp_apikey',document.getElementById('apiKey').value);else localStorage.removeItem('rp_apikey')}
 
-// === STATUS ===
-function setStatus(s,t){document.getElementById('statusDot').className='status-dot '+(s||'');document.getElementById('statusText').textContent=t}
-function updateTurnCount(){document.getElementById('turnCount').textContent='🔄 '+turnCount+'往復'}
-
-// === MESSAGES ===
-function addMsg(role,text){
-  const d=document.createElement('div');
-  d.className='msg '+(role==='ai'?'ai':role==='system'?'system':'user');
-  const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  if(role==='system'){d.innerHTML=`<div class="msg-bb">${text}</div>`}
-  else{d.innerHTML=`<div class="msg-av">${role==='ai'?'👤':'🧑‍💼'}</div><div><div class="msg-bb">${text.replace(/\n/g,'<br>')}</div><div class="msg-t">${role==='ai'?'顧客(AI)':'営業'} · ${t}</div></div>`}
-  conversationLog.push({role:role==='ai'?'顧客':'営業',text,time:t,ts:Date.now()});
-  const m=document.getElementById('messages');m.appendChild(d);m.scrollTop=m.scrollHeight;
-  if(role==='user')turnCount++;
-  updateTurnCount();
+function onPersonaChange(){
+  document.getElementById('customPersonaBox').style.display=document.getElementById('persona').value==='custom'?'block':'none';
 }
+
+function updateLobbyName(){
+  const name=document.getElementById('salesName').value.trim();
+  document.getElementById('lobbyUserName').textContent=name||'担当者名を入力';
+}
+
+// === LOBBY MIC TEST ===
+async function toggleLobbyMic(){
+  const btn=document.getElementById('lobbyMicBtn');
+  if(lobbyMicStream){
+    lobbyMicStream.getTracks().forEach(t=>t.stop());
+    lobbyMicStream=null;
+    if(lobbyAudioCtx){lobbyAudioCtx.close();lobbyAudioCtx=null}
+    lobbyAnalyser=null;
+    btn.classList.remove('muted');
+    btn.textContent='🎤';
+    document.getElementById('lobbyMicFill').style.width='0%';
+    document.getElementById('lobbyMicStatus').textContent='待機中';
+    return;
+  }
+  try{
+    lobbyMicStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    lobbyAudioCtx=new AudioContext();
+    const src=lobbyAudioCtx.createMediaStreamSource(lobbyMicStream);
+    lobbyAnalyser=lobbyAudioCtx.createAnalyser();
+    lobbyAnalyser.fftSize=256;
+    src.connect(lobbyAnalyser);
+    btn.textContent='🎤';
+    document.getElementById('lobbyMicStatus').textContent='テスト中';
+    const data=new Uint8Array(lobbyAnalyser.frequencyBinCount);
+    (function tick(){
+      if(!lobbyAnalyser)return;
+      lobbyAnalyser.getByteFrequencyData(data);
+      const avg=data.reduce((a,b)=>a+b,0)/data.length;
+      document.getElementById('lobbyMicFill').style.width=Math.min(100,avg*2)+'%';
+      requestAnimationFrame(tick);
+    })();
+  }catch(e){
+    document.getElementById('lobbyMicStatus').textContent='マイクエラー';
+  }
+}
+
+// === STATUS ===
+function setStatus(s,t){
+  // Avatar ring state
+  const ring=document.getElementById('aiAvatarRing');
+  const indicator=document.getElementById('speakingIndicator');
+  if(ring){
+    ring.className='avatar-ring '+(s||'');
+  }
+  if(indicator){
+    indicator.classList.toggle('active',s==='speaking'||s==='listening'||s==='thinking');
+    if(s==='speaking') indicator.textContent='発話中...';
+    else if(s==='listening') indicator.textContent='聞いています...';
+    else if(s==='thinking') indicator.textContent='接続中...';
+    else indicator.textContent='';
+  }
+}
+
+function updateTurnCount(){
+  // no-op (header shows timer instead)
+}
+
+// === TRANSCRIPT MESSAGES ===
+function addMsg(role,text){
+  const container=document.getElementById('transcriptMessages');
+  if(!container)return;
+  const d=document.createElement('div');
+  d.className='t-msg '+(role==='ai'?'t-ai':role==='system'?'t-system':'t-user');
+  const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if(role==='system'){
+    d.innerHTML=`<div class="t-text" style="color:var(--gold);font-size:12px">${text}</div>`;
+  }else{
+    const sender=role==='ai'?'顧客（AI）':(document.getElementById('salesName').value||'あなた');
+    d.innerHTML=`<div class="t-sender">${role==='ai'?'👤':'🧑‍💼'} ${sender}</div><div class="t-text">${text.replace(/\n/g,'<br>')}</div><div class="t-time">${t}</div>`;
+  }
+  conversationLog.push({role:role==='ai'?'顧客':'営業',text,time:t,ts:Date.now()});
+  container.appendChild(d);
+  container.scrollTop=container.scrollHeight;
+  if(role==='user')turnCount++;
+
+  // Show live caption
+  if(role!=='system') showCaption(role,text);
+}
+
 function clearMsgs(){
-  document.getElementById('messages').innerHTML='';
-  conversationLog=[];turnCount=0;updateTurnCount();
+  const c=document.getElementById('transcriptMessages');
+  if(c)c.innerHTML='';
+  conversationLog=[];turnCount=0;
   liveAiBubble=null;liveAiText='';
   liveUserBubble=null;liveUserText='';
   turnHadAudio=false;
 }
 
-// === LIVE TRANSCRIPT BUBBLES (LINE-style) ===
+// === LIVE TRANSCRIPT BUBBLES ===
 function getOrCreateLiveBubble(role){
+  const container=document.getElementById('transcriptMessages');
+  if(!container) return null;
   if(role==='ai'){
     if(!liveAiBubble){
       const d=document.createElement('div');
-      d.className='msg ai';
+      d.className='t-msg t-ai';
       const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      d.innerHTML=`<div class="msg-av">👤</div><div><div class="msg-bb live"></div><div class="msg-t">顧客(AI) · ${t}</div></div>`;
-      const m=document.getElementById('messages');m.appendChild(d);m.scrollTop=m.scrollHeight;
-      liveAiBubble=d.querySelector('.msg-bb');
+      d.innerHTML=`<div class="t-sender">👤 顧客（AI）</div><div class="t-text live"></div><div class="t-time">${t}</div>`;
+      container.appendChild(d);container.scrollTop=container.scrollHeight;
+      liveAiBubble=d.querySelector('.t-text');
       liveAiText='';
     }
     return liveAiBubble;
   }else{
     if(!liveUserBubble){
       const d=document.createElement('div');
-      d.className='msg user';
+      d.className='t-msg t-user';
+      const name=document.getElementById('salesName').value||'あなた';
       const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      d.innerHTML=`<div class="msg-av">🧑‍💼</div><div><div class="msg-bb live"></div><div class="msg-t">営業 · ${t}</div></div>`;
-      const m=document.getElementById('messages');m.appendChild(d);m.scrollTop=m.scrollHeight;
-      liveUserBubble=d.querySelector('.msg-bb');
+      d.innerHTML=`<div class="t-sender">🧑‍💼 ${name}</div><div class="t-text live"></div><div class="t-time">${t}</div>`;
+      container.appendChild(d);container.scrollTop=container.scrollHeight;
+      liveUserBubble=d.querySelector('.t-text');
       liveUserText='';
     }
     return liveUserBubble;
@@ -436,6 +1675,7 @@ function getOrCreateLiveBubble(role){
 
 function appendTranscript(role,text){
   const bubble=getOrCreateLiveBubble(role);
+  if(!bubble)return;
   if(role==='ai'){
     liveAiText+=text;
     bubble.innerHTML=liveAiText.replace(/\n/g,'<br>');
@@ -443,7 +1683,11 @@ function appendTranscript(role,text){
     liveUserText+=text;
     bubble.innerHTML=liveUserText.replace(/\n/g,'<br>');
   }
-  document.getElementById('messages').scrollTop=document.getElementById('messages').scrollHeight;
+  const c=document.getElementById('transcriptMessages');
+  if(c)c.scrollTop=c.scrollHeight;
+
+  // Also update live captions
+  showCaption(role, role==='ai'?liveAiText:liveUserText);
 }
 
 function finalizeBubble(role){
@@ -460,24 +1704,40 @@ function finalizeBubble(role){
       liveUserBubble.classList.remove('live');
       if(liveUserText.trim()){
         conversationLog.push({role:'営業',text:liveUserText.trim(),time:new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),ts:Date.now()});
-        turnCount++;updateTurnCount();
+        turnCount++;
       }
     }
     liveUserBubble=null;liveUserText='';
   }
 }
 
-// === TIMER ===
-function startTimer(){startTime=Date.now();timerInterval=setInterval(()=>{const s=Math.floor((Date.now()-startTime)/1000);document.getElementById('sessionTimer').textContent='⏱ '+String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000)}
+// === LIVE CAPTIONS ===
+function showCaption(role,text){
+  const el=document.getElementById('liveCaptions');
+  const sender=document.getElementById('captionSender');
+  const txt=document.getElementById('captionText');
+  if(!el)return;
+  sender.textContent=role==='ai'?'顧客:':'あなた:';
+  // Truncate to last 80 chars
+  const display=text.length>80?'...'+text.slice(-80):text;
+  txt.textContent=display;
+  el.classList.add('visible');
+  clearTimeout(captionTimeout);
+  captionTimeout=setTimeout(()=>el.classList.remove('visible'),4000);
+}
 
-// === WAVEFORM ===
-function initWave(){const c=document.getElementById('waveCanvas');waveCtx=c.getContext('2d');c.width=c.offsetWidth*2;c.height=72;waveData=new Uint8Array(128)}
-function drawWave(){if(!sessionActive||!waveCtx)return;if(analyserNode){analyserNode.getByteTimeDomainData(waveData)}
-const w=waveCtx.canvas.width,h=waveCtx.canvas.height;waveCtx.fillStyle='#1e2230';waveCtx.fillRect(0,0,w,h);
-waveCtx.lineWidth=2;waveCtx.strokeStyle='#4f6ef7';waveCtx.beginPath();
-const sl=w/waveData.length;let x=0;
-for(let i=0;i<waveData.length;i++){const v=waveData[i]/128;const y=v*h/2;if(i===0)waveCtx.moveTo(x,y);else waveCtx.lineTo(x,y);x+=sl}
-waveCtx.stroke();requestAnimationFrame(drawWave)}
+// === TIMER ===
+function startTimer(){
+  startTime=Date.now();
+  timerInterval=setInterval(()=>{
+    const s=Math.floor((Date.now()-startTime)/1000);
+    const formatted=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+    const h=document.getElementById('callHeaderTimer');
+    const b=document.getElementById('callBarTimer');
+    if(h)h.textContent=formatted;
+    if(b)b.textContent=formatted;
+  },1000);
+}
 
 // === SILENCE HINT ===
 function resetSilenceTimer(){
@@ -490,15 +1750,36 @@ function resetSilenceTimer(){
   },15000);
 }
 
+// === JOIN MEETING ===
+function joinMeeting(){
+  const apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey){alert('API Keyを入力してください（詳細設定内）');return}
+
+  // Stop lobby mic test if running
+  if(lobbyMicStream){
+    lobbyMicStream.getTracks().forEach(t=>t.stop());
+    lobbyMicStream=null;
+    if(lobbyAudioCtx){lobbyAudioCtx.close();lobbyAudioCtx=null}
+    lobbyAnalyser=null;
+  }
+
+  // Set up call screen info
+  const persona=PERSONAS[document.getElementById('persona').value];
+  const scenarioKey=document.getElementById('scenario').value;
+  document.getElementById('callScenarioBadge').textContent=SCENARIO_LABELS[scenarioKey]||'';
+  document.getElementById('aiPersonaLabel').textContent=persona?.jp||'';
+  document.getElementById('pipName').textContent=document.getElementById('salesName').value||'あなた';
+
+  showScreen('call');
+  startSession();
+}
+
 // === GEMINI LIVE API ===
 async function startSession(){
   const apiKey=document.getElementById('apiKey').value.trim();
-  if(!apiKey){alert('API Keyを入力してください');return}
   saveApiKey();
-  clearMsgs();initWave();
-  document.getElementById('btnStart').disabled=true;
-  document.getElementById('btnStop').disabled=false;
-  document.getElementById('btnGrade').disabled=true;
+  clearMsgs();
+  document.getElementById('btnCallGrade').disabled=true;
   setStatus('thinking','接続中...');
 
   const persona=PERSONAS[document.getElementById('persona').value];
@@ -507,11 +1788,11 @@ async function startSession(){
   const salesName=document.getElementById('salesName').value||'営業担当';
   const diff=DIFFICULTY[document.getElementById('difficulty').value];
   const scn=SCENARIOS[document.getElementById('scenario').value];
-  const isCustom = document.getElementById('persona').value==='custom';
-  const customLog = isCustom ? document.getElementById('customTranscript').value.trim() : '';
+  const isCustom=document.getElementById('persona').value==='custom';
+  const customLog=isCustom?document.getElementById('customTranscript').value.trim():'';
 
   let systemPrompt;
-  if(isCustom && customLog){
+  if(isCustom&&customLog){
     systemPrompt=`あなたは日本人の顧客役です。必ず日本語だけで話してください。英語は絶対に使わないでください。
 
 以下は実際の商談で失注した顧客の会話ログです。この顧客の話し方、思考パターン、反論の仕方、口癖をトレースして、同じタイプの顧客として振る舞ってください。
@@ -528,7 +1809,7 @@ ${customLog.substring(0,3000)}
 - メタ的な説明は不要。顧客として直接会話する。
 
 この顧客になりきって、最初の発言をしてください。`;
-  } else {
+  }else{
     systemPrompt=`あなたは日本人の顧客役です。必ず日本語だけで話してください。英語は絶対に使わないでください。
 
 あなたは「${persona.jp}」として、${product}の営業担当「${salesName}さん」と音声で会話する顧客です。
@@ -554,78 +1835,69 @@ ${customLog.substring(0,3000)}
 
   try{
     ws=new WebSocket(wsUrl);
-    addMsg('system','🔌 接続中... (モデル: '+MODEL+')');
+    addMsg('system','接続中... ('+MODEL+')');
     const connectTimeout=setTimeout(()=>{
-      if(!sessionActive){setStatus('','接続タイムアウト。別のモデルを試してください');resetUI();if(ws)ws.close()}
+      if(!sessionActive){setStatus('','接続タイムアウト');showScreen('lobby');if(ws)ws.close()}
     },10000);
 
     ws.onopen=()=>{
-      // CRITICAL: Do NOT add output_audio_transcription, input_audio_transcription, or realtime_input_config here
-      const setupPayload = {
+      const setupPayload={
         setup:{
           model:`models/${MODEL}`,
           generation_config:{
             response_modalities:['AUDIO'],
             speech_config:{
-              voice_config:{
-                prebuilt_voice_config:{voice_name:'Puck'}
-              },
+              voice_config:{prebuilt_voice_config:{voice_name:'Puck'}},
               language_code:'ja-JP'
             }
           },
-          system_instruction:{
-            parts:[{text:systemPrompt}]
-          }
+          system_instruction:{parts:[{text:systemPrompt}]}
         }
       };
-      console.log('Setup:', JSON.stringify(setupPayload).substring(0,400));
       ws.send(JSON.stringify(setupPayload));
     };
 
     ws.onmessage=async(e)=>{
-      const raw = typeof e.data==='string'?e.data:await e.data.text();
+      const raw=typeof e.data==='string'?e.data:await e.data.text();
       const data=JSON.parse(raw);
 
       if(data.setupComplete){
         clearTimeout(connectTimeout);
-        setStatus('listening','ロープレ開始！顧客が話しかけます...');
+        setStatus('listening','ロープレ開始！');
         sessionActive=true;startTimer();startRecording();
-        addMsg('system','✅ 接続成功 ('+MODEL+')');
+        addMsg('system','接続成功');
         ws.send(JSON.stringify({client_content:{turns:[{role:'user',parts:[{text:'会話を始めてください'}]}],turn_complete:true}}));
         await startMicrophone();
-        drawWave();resetSilenceTimer();
+        startAvatarAnimation();
+        resetSilenceTimer();
         return;
       }
 
       if(data.serverContent?.modelTurn?.parts){
-        let hasAudio = false;
+        let hasAudio=false;
         for(const p of data.serverContent.modelTurn.parts){
           if(p.inlineData?.mimeType?.startsWith('audio/')){playAudioChunk(p.inlineData.data);hasAudio=true;}
-          // Skip p.text — native audio model outputs internal reasoning in English, not dialogue
         }
         if(hasAudio){setStatus('speaking','AI顧客が話しています...');turnHadAudio=true;}
       }
 
-      // Live transcript: AI speech as text (streamed in chunks)
       if(data.serverContent?.outputTranscript?.text){
         appendTranscript('ai',data.serverContent.outputTranscript.text);
       }
-      // Live transcript: User speech as text
       if(data.serverContent?.inputTranscript?.text){
         appendTranscript('user',data.serverContent.inputTranscript.text);
         finalizeBubble('user');
         resetSilenceTimer();
-      }else if(typeof data.serverContent?.inputTranscript === 'string' && data.serverContent.inputTranscript){
+      }else if(typeof data.serverContent?.inputTranscript==='string'&&data.serverContent.inputTranscript){
         appendTranscript('user',data.serverContent.inputTranscript);
         finalizeBubble('user');
         resetSilenceTimer();
       }
 
-      if(data.serverContent?.interrupted){clearAudioQueue();setStatus('listening','割り込み検知 — 続けてどうぞ')}
+      if(data.serverContent?.interrupted){clearAudioQueue();setStatus('listening','割り込み検知')}
 
       if(data.serverContent?.turnComplete){
-        // Finalize AI bubble; if no transcript received but audio played, log marker for grading
-        if(!liveAiText.trim() && turnHadAudio){
+        if(!liveAiText.trim()&&turnHadAudio){
           conversationLog.push({role:'顧客',text:'(音声発言)',time:new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),ts:Date.now()});
         }
         finalizeBubble('ai');
@@ -636,18 +1908,17 @@ ${customLog.substring(0,3000)}
 
       if(data.error){
         console.error('Gemini Error:',data.error);
-        setStatus('','エラー: '+(data.error.message||JSON.stringify(data.error)));
+        setStatus('','エラー');
         addMsg('system','❌ '+JSON.stringify(data.error));
-        resetUI();
+        stopSession();
+        showScreen('lobby');
       }
     };
 
-    ws.onerror=(e)=>{console.error('WS Error',e);clearTimeout(connectTimeout);setStatus('','接続エラー。別のモデルを選んで再試行してください');addMsg('system','❌ WebSocket接続エラー。モデルを変更してみてください');resetUI()};
-    ws.onclose=(e)=>{clearTimeout(connectTimeout);if(sessionActive){setStatus('','セッション終了');sessionActive=false}else if(document.getElementById('btnStart').disabled){setStatus('','接続失敗 (code:'+e.code+'). モデルを変更して再試行してください');addMsg('system','❌ code:'+e.code+' — 別のモデルを試すか、API Keyを確認してください');resetUI()}};
-  }catch(err){alert('接続失敗: '+err.message);resetUI()}
+    ws.onerror=(e)=>{console.error('WS Error',e);clearTimeout(connectTimeout);setStatus('','接続エラー');addMsg('system','❌ WebSocket接続エラー');stopSession();showScreen('lobby')};
+    ws.onclose=(e)=>{clearTimeout(connectTimeout);if(sessionActive){setStatus('','セッション終了');sessionActive=false}};
+  }catch(err){alert('接続失敗: '+err.message);showScreen('lobby')}
 }
-
-function resetUI(){document.getElementById('btnStart').disabled=false;document.getElementById('btnStop').disabled=true;document.getElementById('btnGrade').disabled=conversationLog.length<2?true:false}
 
 // === MIC ===
 async function startMicrophone(){
@@ -668,42 +1939,81 @@ async function startMicrophone(){
 const WORKLET_CODE=`class PcmProcessor extends AudioWorkletProcessor{constructor(){super();this._b=new Int16Array(1024);this._p=0}process(i){const d=i[0]?.[0];if(!d)return true;for(let j=0;j<d.length;j++){this._b[this._p++]=Math.max(-32768,Math.min(32767,d[j]*32768));if(this._p>=this._b.length){this.port.postMessage(this._b.buffer.slice(0));this._p=0}}return true}}registerProcessor('pcm-processor',PcmProcessor);`;
 
 function ab2b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.byteLength;i++)s+=String.fromCharCode(b[i]);return btoa(s)}
-function startVolMon(){const vf=document.getElementById('volFill');const d=new Uint8Array(analyserNode.frequencyBinCount);(function tick(){if(!sessionActive)return;analyserNode.getByteFrequencyData(d);vf.style.width=Math.min(100,d.reduce((a,b)=>a+b,0)/d.length*2)+'%';volumeAnimFrame=requestAnimationFrame(tick)})()}
 
-// === PLAYBACK (Immediate Scheduling — zero batch delay) ===
+function startVolMon(){
+  const pip=document.getElementById('pipContainer');
+  const data=new Uint8Array(analyserNode.frequencyBinCount);
+  (function tick(){
+    if(!sessionActive)return;
+    analyserNode.getByteFrequencyData(data);
+    const avg=data.reduce((a,b)=>a+b,0)/data.length;
+    // PiP speaking indicator
+    if(pip) pip.classList.toggle('user-speaking',avg>15);
+    volumeAnimFrame=requestAnimationFrame(tick);
+  })();
+}
+
+// === AVATAR RING ANIMATION ===
+function startAvatarAnimation(){
+  const glow=document.getElementById('avatarGlow');
+  const ring=document.getElementById('aiAvatarRing');
+  if(!glow||!ring)return;
+  (function animate(){
+    if(!sessionActive)return;
+    // If we have audio playing (speaking state), pulse the glow
+    if(ring.classList.contains('speaking')&&scheduledSources.length>0){
+      const intensity=Math.min(1,scheduledSources.length/3);
+      glow.style.boxShadow=`0 0 ${20+intensity*30}px rgba(52,168,83,${0.15+intensity*0.3})`;
+      glow.style.borderColor=`rgba(52,168,83,${0.2+intensity*0.3})`;
+    }else{
+      glow.style.boxShadow='none';
+      glow.style.borderColor='transparent';
+    }
+    requestAnimationFrame(animate);
+  })();
+}
+
+// === MIC TOGGLE ===
+function toggleMic(){
+  if(!mediaStream)return;
+  const track=mediaStream.getAudioTracks()[0];
+  if(!track)return;
+  track.enabled=!track.enabled;
+  const btn=document.getElementById('btnMicToggle');
+  btn.classList.toggle('muted',!track.enabled);
+  btn.textContent=track.enabled?'🎤':'🔇';
+  const pipMic=document.getElementById('pipMic');
+  if(pipMic)pipMic.textContent=track.enabled?'🎤':'🔇';
+}
+
+// === TRANSCRIPT TOGGLE ===
+function toggleTranscript(){
+  const panel=document.getElementById('transcriptPanel');
+  panel.classList.toggle('hidden');
+  document.getElementById('btnTranscript').classList.toggle('active',!panel.classList.contains('hidden'));
+}
+
+// === PLAYBACK ===
 function getPlayCtx(){
-  if(!playbackCtx || playbackCtx.state==='closed'){
-    playbackCtx = new AudioContext({sampleRate:24000});
-  }
+  if(!playbackCtx||playbackCtx.state==='closed'){playbackCtx=new AudioContext({sampleRate:24000})}
   return playbackCtx;
 }
-
 function clearAudioQueue(){
   scheduledSources.forEach(s=>{try{s.stop()}catch(e){}});
-  scheduledSources=[];
-  nextPlayTime=0;
+  scheduledSources=[];nextPlayTime=0;
 }
-
 function playAudioChunk(b64){
   const raw=atob(b64);const bytes=new Uint8Array(raw.length);
   for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
   const pcm=new Int16Array(bytes.buffer);const f32=new Float32Array(pcm.length);
   for(let i=0;i<pcm.length;i++)f32[i]=pcm[i]/32768;
-
   const ctx=getPlayCtx();
   const buf=ctx.createBuffer(1,f32.length,24000);
   buf.getChannelData(0).set(f32);
-
-  const s=ctx.createBufferSource();
-  s.buffer=buf;
-  s.connect(ctx.destination);
-
-  // Schedule immediately with no batching delay
+  const s=ctx.createBufferSource();s.buffer=buf;s.connect(ctx.destination);
   const now=ctx.currentTime;
-  if(nextPlayTime<now) nextPlayTime=now;
-  s.start(nextPlayTime);
-  nextPlayTime+=buf.duration;
-
+  if(nextPlayTime<now)nextPlayTime=now;
+  s.start(nextPlayTime);nextPlayTime+=buf.duration;
   scheduledSources.push(s);
   s.onended=()=>{scheduledSources=scheduledSources.filter(x=>x!==s)};
 }
@@ -711,7 +2021,7 @@ function playAudioChunk(b64){
 // === RECORDING ===
 function startRecording(){
   try{
-    const dest=new AudioContext();const osc=dest.createOscillator();
+    const dest=new AudioContext();
     const combined=dest.createMediaStreamDestination();
     mediaRecorder=new MediaRecorder(combined.stream,{mimeType:'audio/webm'});
     recordedChunks=[];
@@ -721,7 +2031,29 @@ function startRecording(){
 }
 function stopRecording(){if(mediaRecorder&&mediaRecorder.state!=='inactive'){mediaRecorder.stop()}}
 
-// === STOP ===
+// === END CALL ===
+function endCall(){
+  stopSession();
+  if(conversationLog.length>=2){
+    // Show option to grade
+    document.getElementById('btnCallGrade').disabled=false;
+    setStatus('','通話終了。採点ボタンを押してください');
+    // Also offer to go back
+    setTimeout(()=>{
+      if(document.getElementById('screen-call').classList.contains('active')){
+        // Still on call screen, give them a chance to grade
+      }
+    },500);
+  }else{
+    showScreen('lobby');
+  }
+}
+
+function gradeFromCall(){
+  gradeSession();
+}
+
+// === STOP SESSION ===
 function stopSession(){
   sessionActive=false;clearTimeout(silenceTimer);
   if(volumeAnimFrame)cancelAnimationFrame(volumeAnimFrame);
@@ -732,19 +2064,17 @@ function stopSession(){
   if(ws){ws.close();ws=null}
   if(timerInterval){clearInterval(timerInterval);timerInterval=null}
   stopRecording();
-  document.getElementById('volFill').style.width='0%';
-  document.getElementById('btnStart').disabled=false;
-  document.getElementById('btnStop').disabled=true;
-  document.getElementById('btnGrade').disabled=conversationLog.length<2;
-  setStatus('',conversationLog.length>=2?'終了。「採点」を押してください':'終了');
+  analyserNode=null;
 }
 
-// === GRADING (STRICT) ===
+// === GRADING ===
 async function gradeSession(){
   const apiKey=document.getElementById('apiKey').value.trim();
   if(!apiKey)return;
-  document.getElementById('btnGrade').disabled=true;
-  document.getElementById('btnGrade').textContent='⏳ 採点中...';
+  const gradeBtn=document.getElementById('btnCallGrade');
+  if(gradeBtn){gradeBtn.disabled=true;gradeBtn.textContent='⏳'}
+  setStatus('thinking','採点中...');
+
   const logText=conversationLog.filter(m=>m.role!=='system').map(m=>`【${m.role}】${m.text}`).join('\n');
   const wp=document.getElementById('weakPoint').value;
 
@@ -763,22 +2093,22 @@ ${logText}
 - 9-10点: 卓越。顧客の感情が明確に動いた証拠あり。
 
 ## 10軸の評価基準
-1. 権威性: 「選ぶ側」のスタンス維持。相手からの敬意を得ているか。
-2. 損失回避: 現状維持のリスクを具体的に指摘。相手が焦りや危機感を感じたか。
-3. リフレーミング: 「スクール」を「社内研修」等に定義変更。顧客が新しい定義を受入れたか。
-4. アンカリング: 費用を「覚悟のフィルター」「投資」と定義し安く感じさせたか。
-5. クロージング: 「手続き進めます」と言い切り、相手を誘導できたか。
-6. ヒアリング: 顧客の課題・ニーズを的確に引き出せたか。深堀り質問ができたか。
-7. ラポール: 信頼関係構築。共感・オウム返し・名前呼びがあったか。
-8. 反論処理: 反論を受け止め、条件付きYesに持ち込めたか。
-9. テンポ: 沈黙の活用、矢継ぎ早にならず間を取れたか。
-10. 提案力: 抽象論でなく具体的な活用イメージを描けたか。
+1. 権威性: 「選ぶ側」のスタンス維持。
+2. 損失回避: 現状維持のリスクを具体的に指摘。
+3. リフレーミング: 定義変更。
+4. アンカリング: 費用を投資と定義。
+5. クロージング: 言い切り誘導。
+6. ヒアリング: 課題の深堀り。
+7. ラポール: 信頼関係構築。
+8. 反論処理: 切り返し。
+9. テンポ: 会話リズム。
+10. 提案力: 具体的活用イメージ。
 
 # 重点チェック: 弱点「${wp}」に特に厳しく
 
 # 出力ルール
-- 各軸には必ずevidence（根拠となる発言の引用）とdeduction（減点理由）を付ける
-- 同じログなら何度採点しても同じ点数になるよう、ルブリックに忠実な客観的採点をする
+- 各軸にevidence（根拠発言の引用）とdeduction（減点理由）を付ける
+- ルブリックに忠実な客観的採点
 
 # 出力(JSON)
 {
@@ -810,70 +2140,261 @@ ${logText}
     let raw=json.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
     raw=raw.replace(/```json/g,'').replace(/```/g,'').trim();
     const result=JSON.parse(raw);
-    // Normalize sub scores
     if(result.sub){
       const norm={};
-      Object.entries(result.sub).forEach(([k,v])=>{
-        norm[k]=typeof v==='object'?v:{score:v,evidence:'',deduction:''};
-      });
+      Object.entries(result.sub).forEach(([k,v])=>{norm[k]=typeof v==='object'?v:{score:v,evidence:'',deduction:''}});
       result.sub=norm;
     }
     showResult(result);
     saveHistory(result);
     saveUsage(result);
     postToGAS(result);
-  }catch(e){alert('採点エラー: '+e.message)}
-  document.getElementById('btnGrade').disabled=false;
-  document.getElementById('btnGrade').textContent='📊 採点';
+  }catch(e){alert('採点エラー: '+e.message);showScreen('lobby')}
+
+  if(gradeBtn){gradeBtn.disabled=false;gradeBtn.textContent='📊'}
 }
 
 function showResult(r){
-  document.getElementById('resultScore').textContent=r.total+'点';
-  const sub=Object.entries(r.sub||{}).map(([k,v])=>{
-    const sc=typeof v==='object'?v.score:v;
-    const ev=typeof v==='object'?v.evidence:'';
-    const ded=typeof v==='object'?v.deduction:'';
-    return `<div style="margin-bottom:10px">
-      <div class="sb-item"><div class="n">${SUB_NAMES[k]||k}</div><div class="bg"><div class="fl" style="width:${(sc/10)*100}%;background:${sc<5?'var(--red)':sc<7?'var(--gold)':'var(--green)'}"></div></div><div class="v">${sc}</div>
-      <button onclick="drillWeakPoint('${k}')" style="background:none;border:1px solid var(--accent);color:var(--accent);border-radius:12px;padding:1px 8px;font-size:10px;cursor:pointer;margin-left:4px" title="この弱点で練習">🎯</button></div>
-      ${ev&&ev!=='なし'?`<div style="font-size:10px;color:var(--green);padding-left:80px;margin-top:2px">✅ ${ev}</div>`:''}
-      ${ded?(sc>=9?'':(sc>=7?`<div style="font-size:10px;color:var(--text2);padding-left:80px">💡 ${ded}</div>`:`<div style="font-size:10px;color:var(--red);padding-left:80px">❌ ${ded}</div>`)):''}
+  const dur=startTime?Math.floor((Date.now()-startTime)/1000):0;
+  const durStr=String(Math.floor(dur/60)).padStart(2,'0')+':'+String(dur%60).padStart(2,'0');
+  const persona=PERSONAS[document.getElementById('persona').value];
+  const personaName=persona?.jp||'カスタム';
+  const dateStr=new Date().toLocaleDateString('ja-JP');
+
+  // --- Session visual card ---
+  document.getElementById('resultPersonaName').textContent=personaName;
+  document.getElementById('resultSessionMeta2').textContent=`${dateStr} ・ 難易度: ${document.getElementById('difficulty')?.selectedOptions[0]?.text||'中'}`;
+  document.getElementById('resultDuration').textContent=durStr;
+  document.getElementById('resultDate').textContent=dateStr;
+  document.getElementById('resultTurns').textContent=turnCount;
+  document.getElementById('resultsBreadcrumbTitle').textContent=`${personaName} - 分析結果`;
+
+  // Streak badge
+  updateStreak(); updateTitle(r.total);
+  const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
+  const days=new Set(h.map(i=>i.date));
+  let streak=0;let dd=new Date();
+  while(days.has(dd.toLocaleDateString('ja-JP'))){streak++;dd.setDate(dd.getDate()-1)}
+  document.getElementById('resultStreakArea').innerHTML=streak>=2?
+    `<span class="text-xs font-bold text-orange-400 bg-orange-900/40 px-2 py-0.5 rounded-full">🔥 ${streak}日連続</span>`:'';
+
+  // --- Phase markers from timeline ---
+  const phaseContainer=document.getElementById('resultPhaseContainer');
+  const phaseIcons=[
+    {icon:'waving_hand',color:'primary',bg:'bg-primary/10 border-primary/20',text:'text-primary'},
+    {icon:'report_problem',color:'orange',bg:'bg-orange-100 border-orange-200',text:'text-orange-700'},
+    {icon:'check_circle',color:'green',bg:'bg-green-100 border-green-200',text:'text-green-700'},
+    {icon:'handshake',color:'blue',bg:'bg-blue-100 border-blue-200',text:'text-blue-700'}
+  ];
+  if(r.timeline?.length){
+    phaseContainer.innerHTML=r.timeline.map((t,i)=>{
+      const pi=phaseIcons[i%phaseIcons.length];
+      return `<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg ${pi.bg} border">
+        <span class="material-symbols-outlined ${pi.text}" style="font-size:16px">${pi.icon}</span>
+        <span class="text-xs font-semibold ${pi.text}">${t.event}</span>
+      </div>`;
+    }).join('');
+  }else{
+    phaseContainer.innerHTML=['導入','展開','提案','クロージング'].map((label,i)=>{
+      const pi=phaseIcons[i];
+      return `<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg ${pi.bg} border">
+        <span class="material-symbols-outlined ${pi.text}" style="font-size:16px">${pi.icon}</span>
+        <span class="text-xs font-semibold ${pi.text}">${label}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // --- Score circle animation ---
+  showScreen('results');
+  const scoreEl=document.getElementById('resultScore');
+  const arcEl=document.getElementById('resultScoreArc');
+  const labelEl=document.getElementById('resultScoreLabel');
+  scoreEl.textContent='0';
+  const total=r.total||0;
+  const circumference=2*Math.PI*52; // ~326.73
+  const targetOffset=circumference*(1-total/100);
+  labelEl.textContent=total>=80?'非常に良好':total>=60?'良好':total>=40?'改善の余地あり':'要改善';
+
+  let scoreCount=0;
+  const scoreStep=Math.ceil(total/40);
+  const scoreAnim=setInterval(()=>{
+    scoreCount=Math.min(scoreCount+scoreStep,total);
+    scoreEl.textContent=scoreCount;
+    arcEl.setAttribute('stroke-dashoffset',circumference*(1-scoreCount/100));
+    if(scoreCount>=total)clearInterval(scoreAnim);
+  },20);
+
+  // --- Top 4 sub-scores grid ---
+  const subEntries=Object.entries(r.sub||{});
+  const topScoresEl=document.getElementById('resultTopScores');
+  // Pick top 4 highest scores to feature
+  const sortedForTop=[...subEntries].map(([k,v])=>[k,typeof v==='object'?v.score:v]).sort((a,b)=>b[1]-a[1]);
+  const top4=sortedForTop.slice(0,4);
+  topScoresEl.innerHTML=top4.map(([k,sc])=>
+    `<div class="p-3 bg-slate-50 rounded-lg">
+      <p class="text-xs text-slate-500">${SUB_NAMES[k]||k}</p>
+      <p class="text-lg font-bold text-slate-900">${sc*10}%</p>
+    </div>`
+  ).join('');
+
+  // --- Radar Chart ---
+  const radarKeys=Object.keys(SUB_NAMES);
+  const radarScores=radarKeys.map(k=>{
+    const v=r.sub?.[k];
+    return typeof v==='object'?v.score:(v||5);
+  });
+  const n=radarKeys.length;
+  const cx=50,cy=50,maxR=42;
+  const points=radarScores.map((sc,i)=>{
+    const angle=(2*Math.PI*i/n)-Math.PI/2;
+    const ratio=sc/10;
+    const x=cx+maxR*ratio*Math.cos(angle);
+    const y=cy+maxR*ratio*Math.sin(angle);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  document.getElementById('resultRadarPolygon').setAttribute('points',points);
+
+  // Radar labels
+  const labelsEl=document.getElementById('resultRadarLabels');
+  const labelPositions=[
+    {cls:'absolute -top-5 left-1/2 -translate-x-1/2'},  // top
+    {cls:'absolute top-[10%] -right-16'},
+    {cls:'absolute top-[35%] -right-20'},
+    {cls:'absolute bottom-[15%] -right-16'},
+    {cls:'absolute bottom-0 right-[15%]'},
+    {cls:'absolute bottom-0 left-[15%]'},
+    {cls:'absolute bottom-[15%] -left-16'},
+    {cls:'absolute top-[35%] -left-20'},
+    {cls:'absolute top-[10%] -left-16'},
+    {cls:'absolute -top-5 right-[20%]'},
+  ];
+  labelsEl.innerHTML=radarKeys.map((k,i)=>{
+    const pos=labelPositions[i%labelPositions.length];
+    return `<div class="${pos.cls} text-[9px] font-bold text-slate-500 whitespace-nowrap">${SUB_NAMES[k]}</div>`;
+  }).join('');
+
+  // Competency stats
+  const avgScore=(radarScores.reduce((a,b)=>a+b,0)/n).toFixed(1);
+  const compStats=document.getElementById('resultCompetencyStats');
+  compStats.innerHTML=`
+    <div class="flex justify-between items-center">
+      <span class="text-sm font-medium">平均スコア</span>
+      <span class="text-sm font-bold">${avgScore}/10</span>
+    </div>
+    <div class="flex justify-between items-center">
+      <span class="text-sm font-medium">会話往復数</span>
+      <span class="text-sm font-bold">${turnCount}回</span>
+    </div>
+    <div class="flex justify-between items-center">
+      <span class="text-sm font-medium">セッション時間</span>
+      <span class="text-sm font-bold">${durStr}</span>
+    </div>
+  `;
+
+  // --- Transcript ---
+  const transcriptEl=document.getElementById('resultTranscript');
+  const countEl=document.getElementById('resultTranscriptCount');
+  const logs=conversationLog.filter(m=>m.role!=='system');
+  countEl.textContent=`${logs.length}件`;
+  transcriptEl.innerHTML=logs.map(m=>{
+    const isAI=m.role==='顧客';
+    return `<div class="space-y-1">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold ${isAI?'text-primary':'text-slate-900'} uppercase tracking-wider">${isAI?'AI 顧客':'あなた（営業）'}</span>
+        <span class="text-xs text-slate-400">${m.time||''}</span>
+      </div>
+      <p class="text-sm text-slate-700 leading-relaxed ${isAI?'':'bg-primary/5 p-2 rounded-lg border-l-2 border-primary'}">${m.text}</p>
     </div>`;
   }).join('');
-  document.getElementById('resultSubScores').innerHTML=sub;
-  document.getElementById('resultComment').innerHTML=`<p>${r.feedback||''}</p>`+(r.best_moment?`<p style="margin-top:10px;color:var(--green)">✅ ${r.best_moment}</p>`:'');
-  if(r.ideal){document.getElementById('idealSection').style.display='block';document.getElementById('idealResponse').textContent=r.ideal}
-  if(r.timeline?.length){
-    document.getElementById('timelineSection').style.display='block';
-    document.getElementById('timelineContent').innerHTML=r.timeline.map(t=>`<div style="margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:8px;font-size:12px"><span style="color:${t.evaluation==='良い'?'var(--green)':t.evaluation==='悪い'?'var(--red)':'var(--text2)'}">${t.evaluation==='良い'?'✅':t.evaluation==='悪い'?'❌':'➖'}</span> <b>${t.event}</b><br><span style="color:var(--text2)">${t.comment}</span></div>`).join('');
+
+  // --- AI Coaching Insights ---
+  const insightsEl=document.getElementById('resultCoachingInsights');
+  let insightsHTML='';
+
+  // Best moment
+  if(r.best_moment){
+    insightsHTML+=`<div class="p-4 rounded-lg bg-primary/5 border border-primary/10 space-y-2">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary" style="font-size:18px">lightbulb</span>
+        <span class="text-sm font-bold">効果的だったポイント</span>
+      </div>
+      <p class="text-xs text-slate-600 leading-relaxed">${r.best_moment}</p>
+    </div>`;
   }
-  // Drill: worst 3
+
+  // Feedback
+  if(r.feedback){
+    insightsHTML+=`<div class="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-slate-500" style="font-size:18px">psychology</span>
+        <span class="text-sm font-bold">AIコーチからのフィードバック</span>
+      </div>
+      <p class="text-xs text-slate-600 leading-relaxed">${r.feedback}</p>
+    </div>`;
+  }
+
+  // Ideal response
+  if(r.ideal){
+    insightsHTML+=`<div class="p-4 rounded-lg bg-green-50 border border-green-100 space-y-2">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-green-600" style="font-size:18px">check_circle</span>
+        <span class="text-sm font-bold">理想のトーク例</span>
+      </div>
+      <p class="text-xs text-slate-600 leading-relaxed italic">${r.ideal}</p>
+    </div>`;
+  }
+
+  // Worst axes improvement tips
   if(r.sub){
-    const sorted=Object.entries(r.sub).map(([k,v])=>[k,typeof v==='object'?v.score:v]).sort((a,b)=>a[1]-b[1]);
+    const sorted=Object.entries(r.sub).map(([k,v])=>[k,typeof v==='object'?v.score:v,typeof v==='object'?v.deduction:'']).sort((a,b)=>a[1]-b[1]);
     const worst3=sorted.slice(0,3);
-    document.getElementById('drillSection').style.display='block';
-    document.getElementById('drillButtons').innerHTML=worst3.map(([k,sc])=>
-      `<button onclick="drillWeakPoint('${k}')" style="display:block;width:100%;margin-bottom:6px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;text-align:left">🎯 ${SUB_NAMES[k]} (${sc}点) でピンポイント練習</button>`
-    ).join('');
-    document.getElementById('weakPoint').value=worst3[0][0];updateHint();
+    worstWeakPoint=worst3[0][0];
+
+    worst3.forEach(([k,sc,ded])=>{
+      insightsHTML+=`<div class="p-4 rounded-lg bg-orange-50 border border-orange-100 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-orange-500" style="font-size:18px">trending_up</span>
+          <span class="text-sm font-bold">${SUB_NAMES[k]} の改善 (${sc}点)</span>
+        </div>
+        ${ded?`<p class="text-xs text-slate-600">${ded}</p>`:''}
+        <button class="text-xs font-bold text-primary flex items-center gap-1 hover:underline" onclick="drillWeakPoint('${k}')">
+          🎯 この軸を練習 <span class="material-symbols-outlined" style="font-size:14px">arrow_forward</span>
+        </button>
+      </div>`;
+    });
   }
-  document.getElementById('overlay').classList.add('show');
-  updateTitle(r.total);
+
+  insightsEl.innerHTML=insightsHTML;
+
+  // backward compat hidden elements
+  document.getElementById('resultsMeta').innerHTML=`<span>${durStr}</span><span>${personaName}</span>`;
+  document.getElementById('resultComment').innerHTML=r.feedback||'';
+}
+
+function animateScoreCounter(target,el){
+  let current=0;
+  const step=Math.ceil(target/30);
+  const interval=setInterval(()=>{
+    current=Math.min(current+step,target);
+    el.textContent=current;
+    if(current>=target)clearInterval(interval);
+  },25);
 }
 
 function drillWeakPoint(key){
-  closeResult();
   document.getElementById('weakPoint').value=key;updateHint();
   const map={anchoring:'price_objection',closing:'closing_3min',hearing:'opening',rapport:'opening'};
   if(map[key])document.getElementById('scenario').value=map[key];
-  document.querySelector('.chat-area').scrollIntoView({behavior:'smooth'});
-  const btn=document.getElementById('btnStart');
-  btn.style.animation='pulse 0.5s 3';setTimeout(()=>btn.style.animation='',2000);
+  showScreen('lobby');
 }
 
-function closeResult(){
-  document.getElementById('overlay').classList.remove('show');
-  ['idealSection','timelineSection','drillSection'].forEach(id=>document.getElementById(id).style.display='none');
+function drillFromResults(){
+  if(worstWeakPoint) drillWeakPoint(worstWeakPoint);
+  else showScreen('lobby');
+}
+
+function backToLobby(){
+  showScreen('lobby');
 }
 
 // === HISTORY ===
@@ -884,24 +2405,26 @@ function saveHistory(r){
   h.unshift({date:new Date().toLocaleDateString('ja-JP'),score:r.total,sub:subScores,wp:document.getElementById('weakPoint').value,name:document.getElementById('salesName').value||'?'});
   if(h.length>50)h.length=50;
   localStorage.setItem('rp_history',JSON.stringify(h));
-  loadHistory();updateStreak();
+  loadHistory();
 }
+
 function loadHistory(){
   const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
   const el=document.getElementById('historyList');
-  if(!h.length){el.innerHTML='<span style="font-size:11px;color:var(--text2)">まだ履歴なし</span>';return}
+  if(!el)return;
+  if(!h.length){el.innerHTML='<span style="font-size:11px;color:var(--call-text2)">まだ履歴なし</span>';return}
   el.innerHTML=h.slice(0,10).map(i=>`<div class="history-item"><span>${i.date} ${i.name}</span><span class="hs">${i.score}点</span></div>`).join('');
   if(h.length&&h[0].sub){
     Object.entries(h[0].sub).forEach(([k,v])=>{
       const bar=document.getElementById('bar_'+k);
       const val=document.getElementById('val_'+k);
-      if(bar&&val){bar.style.width=(v/10*100)+'%';val.textContent=v;}
+      if(bar&&val){bar.style.width=(v/10*100)+'%';val.textContent=v}
     });
   }
   renderTrendChart();
 }
 
-// === SCORE TREND CHART (Chart.js) ===
+// === TREND CHART ===
 function renderTrendChart(){
   const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
   const canvas=document.getElementById('trendChart');
@@ -909,77 +2432,34 @@ function renderTrendChart(){
   const recent=h.slice(0,10).reverse();
   const labels=recent.map((_,i)=>'#'+(i+1));
   const scores=recent.map(i=>i.score);
-
-  if(window.trendChartInstance) window.trendChartInstance.destroy();
-
+  if(window.trendChartInstance)window.trendChartInstance.destroy();
   window.trendChartInstance=new Chart(canvas.getContext('2d'),{
     type:'line',
-    data:{
-      labels,
-      datasets:[{
-        label:'総合スコア',
-        data:scores,
-        borderColor:'#4f6ef7',
-        backgroundColor:'rgba(79,110,247,0.1)',
-        fill:true,
-        tension:0.3,
-        pointRadius:4,
-        pointBackgroundColor:'#4f6ef7'
-      }]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      scales:{
-        y:{min:0,max:100,ticks:{color:'#94a3b8',font:{size:10}},grid:{color:'rgba(42,47,64,0.5)'}},
-        x:{ticks:{color:'#94a3b8',font:{size:9}},grid:{display:false}}
-      },
-      plugins:{legend:{display:false}}
-    }
+    data:{labels,datasets:[{label:'総合スコア',data:scores,borderColor:'#1a73e8',backgroundColor:'rgba(26,115,232,0.08)',fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#1a73e8'}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100,ticks:{color:'#5f6368',font:{size:10}},grid:{color:'rgba(0,0,0,0.06)'}},x:{ticks:{color:'#5f6368',font:{size:9}},grid:{display:false}}},plugins:{legend:{display:false}}}
   });
 }
 
-// === USAGE TRACKING ===
+// === USAGE ===
 function saveUsage(r){
   const usage=JSON.parse(localStorage.getItem('rp_usage')||'[]');
   const dur=startTime?Math.floor((Date.now()-startTime)/1000):0;
   const subScores={};
   if(r.sub) Object.entries(r.sub).forEach(([k,v])=>subScores[k]=typeof v==='object'?v.score:v);
-  usage.push({
-    name:document.getElementById('salesName').value||'未設定',
-    date:new Date().toISOString(),
-    month:new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit'}),
-    score:r.total, sub:subScores,
-    duration:dur,
-    scenario:document.getElementById('scenario').value,
-    weakPoint:document.getElementById('weakPoint').value
-  });
+  usage.push({name:document.getElementById('salesName').value||'未設定',date:new Date().toISOString(),month:new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit'}),score:r.total,sub:subScores,duration:dur,scenario:document.getElementById('scenario').value,weakPoint:document.getElementById('weakPoint').value});
   localStorage.setItem('rp_usage',JSON.stringify(usage));
 }
 
-// === GAS POST (採点結果をスプレッドシートに送信) ===
+// === GAS POST ===
 async function postToGAS(result){
   const gasUrl=document.getElementById('gasUrl').value.trim();
   if(!gasUrl)return;
   try{
     const subScores={};
     if(result.sub) Object.entries(result.sub).forEach(([k,v])=>subScores[k]=typeof v==='object'?v.score:v);
-    await fetch(gasUrl,{
-      method:'POST',
-      mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        name:document.getElementById('salesName').value||'未設定',
-        date:new Date().toISOString(),
-        score:result.total,
-        sub:subScores,
-        feedback:result.feedback||'',
-        weakPoint:document.getElementById('weakPoint').value,
-        scenario:document.getElementById('scenario').value,
-        duration:startTime?Math.floor((Date.now()-startTime)/1000):0
-      })
+    await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:document.getElementById('salesName').value||'未設定',date:new Date().toISOString(),score:result.total,sub:subScores,feedback:result.feedback||'',weakPoint:document.getElementById('weakPoint').value,scenario:document.getElementById('scenario').value,duration:startTime?Math.floor((Date.now()-startTime)/1000):0})
     });
-    console.log('GAS POST完了');
   }catch(e){console.warn('GAS POSTエラー:',e)}
 }
 
@@ -1001,19 +2481,16 @@ function renderUsageDashboard(){
   const byName={};
   filtered.forEach(u=>{
     if(!byName[u.name])byName[u.name]={count:0,totalScore:0,totalDur:0,lastDate:''};
-    byName[u.name].count++;
-    byName[u.name].totalScore+=u.score||0;
-    byName[u.name].totalDur+=u.duration||0;
-    byName[u.name].lastDate=u.date?.split('T')[0]||'';
+    byName[u.name].count++;byName[u.name].totalScore+=u.score||0;byName[u.name].totalDur+=u.duration||0;byName[u.name].lastDate=u.date?.split('T')[0]||'';
   });
-  let html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  html+='<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px">担当者</th><th>回数</th><th>平均点</th><th>合計時間</th><th>最終</th></tr>';
+  let html='<table style="width:100%;border-collapse:collapse;font-size:13px">';
+  html+='<tr style="border-bottom:1px solid var(--call-border)"><th style="text-align:left;padding:8px;color:var(--call-text2)">担当者</th><th style="color:var(--call-text2)">回数</th><th style="color:var(--call-text2)">平均点</th><th style="color:var(--call-text2)">合計時間</th><th style="color:var(--call-text2)">最終</th></tr>';
   Object.entries(byName).sort((a,b)=>b[1].count-a[1].count).forEach(([name,d])=>{
     const avg=d.count?(d.totalScore/d.count).toFixed(1):'--';
     const mins=Math.floor(d.totalDur/60);
-    html+=`<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px;font-weight:600">${name}</td><td style="text-align:center">${d.count}回</td><td style="text-align:center;color:${avg>=70?'var(--green)':avg>=50?'var(--gold)':'var(--red)'}">${avg}</td><td style="text-align:center">${mins}分</td><td style="text-align:center;font-size:10px">${d.lastDate}</td></tr>`;
+    html+=`<tr style="border-bottom:1px solid var(--call-border)"><td style="padding:8px;font-weight:600">${name}</td><td style="text-align:center">${d.count}回</td><td style="text-align:center;color:${avg>=70?'var(--call-green)':avg>=50?'var(--gold)':'var(--call-red)'}">${avg}</td><td style="text-align:center">${mins}分</td><td style="text-align:center;font-size:11px">${d.lastDate}</td></tr>`;
   });
-  if(!Object.keys(byName).length)html+='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text2)">まだデータなし</td></tr>';
+  if(!Object.keys(byName).length)html+='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--call-text2)">まだデータなし</td></tr>';
   html+='</table>';
   document.getElementById('usageTable').innerHTML=html;
 }
@@ -1028,18 +2505,16 @@ function exportUsageCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`roleplay_usage_${month}.csv`;a.click();
 }
 
-// === GAS INTEGRATION (失注データ取得) ===
+// === GAS INTEGRATION ===
 async function fetchLossData(){
   const url=document.getElementById('gasUrl').value.trim();
   if(!url){alert('GAS Web App URLを入力してください');return}
   localStorage.setItem('rp_gasUrl',url);
   try{
-    const res=await fetch(url);
-    const data=await res.json();
+    const res=await fetch(url);const data=await res.json();
     const sel=document.getElementById('lossSelect');
     sel.style.display='block';
-    sel.innerHTML='<option value="">失注商談を選択...</option>'+
-      data.map((d,i)=>`<option value="${i}">${d.date} ${d.name} ${d.result} ${d.score}点 - ${d.bad_cause||''}</option>`).join('');
+    sel.innerHTML='<option value="">失注商談を選択...</option>'+data.map((d,i)=>`<option value="${i}">${d.date} ${d.name} ${d.result} ${d.score}点 - ${d.bad_cause||''}</option>`).join('');
     sel.onchange=()=>{
       const idx=sel.value;if(idx==='')return;
       const d=data[Number(idx)];
@@ -1060,11 +2535,12 @@ async function fetchLossData(){
 // === STREAK ===
 function updateStreak(){
   const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
-  if(!h.length){document.getElementById('streakBadge').innerHTML='';return}
+  if(!h.length)return;
   const days=new Set(h.map(i=>i.date));
   let streak=0;let d=new Date();
   while(days.has(d.toLocaleDateString('ja-JP'))){streak++;d.setDate(d.getDate()-1)}
-  document.getElementById('streakBadge').innerHTML=streak>=2?`<span class="streak-badge">🔥 ${streak}日連続</span>`:'';
+  const badge=document.getElementById('streakBadgeResult');
+  if(badge)badge.innerHTML=streak>=2?`<span class="streak-badge">🔥 ${streak}日連続</span>`:'';
 }
 
 // === TITLE ===
@@ -1075,7 +2551,8 @@ function updateTitle(score){
   if(recent3.length>=3&&recent3.every(s=>s>=80))title='🥇 ゴールドクローザー';
   else if(score>=80)title='🥈 シルバークローザー';
   else if(score>=65)title='🥉 ブロンズクローザー';
-  document.getElementById('titleBadge').innerHTML=title?`<span class="title-badge">${title}</span>`:'';
+  const badge=document.getElementById('titleBadgeResult');
+  if(badge)badge.innerHTML=title?`<span class="title-badge">${title}</span>`:'';
 }
 </script>
 </body>
