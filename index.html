@@ -1807,6 +1807,8 @@ ${customLog.substring(0,3000)}
 - ${diff}
 - ${scn}
 - メタ的な説明は不要。顧客として直接会話する。
+- テンポよく素早く話す。長い沈黙や不必要な間を空けない。
+- 1回の発言は15文字〜30文字程度。短くテンポよく返す。
 
 この顧客になりきって、最初の発言をしてください。`;
   }else{
@@ -1826,6 +1828,8 @@ ${customLog.substring(0,3000)}
 - 「あー」「うんうん」「なるほど」と自然に相槌
 - ${scn}
 - メタ的な説明は不要。顧客として直接会話する。
+- テンポよく素早く話す。長い沈黙や不必要な間を空けない。
+- 1回の発言は15文字〜30文字程度。短くテンポよく返す。
 
 最初のセリフ「${persona.intro}」を日本語で話し始めてください。`;
   }
@@ -2392,7 +2396,8 @@ function drillWeakPoint(key){
   document.getElementById('weakPoint').value=key;updateHint();
   const map={anchoring:'price_objection',closing:'closing_3min',hearing:'opening',rapport:'opening'};
   if(map[key])document.getElementById('scenario').value=map[key];
-  showScreen('lobby');
+  // Auto-start call with drill settings
+  joinMeeting();
 }
 
 function drillFromResults(){
