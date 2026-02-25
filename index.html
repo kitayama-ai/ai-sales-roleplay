@@ -10,7 +10,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <script>
 tailwind.config = {
-  important: '#screen-results',
   corePlugins: { preflight: false },
   theme: {
     extend: {
@@ -88,174 +87,56 @@ body {
 .screen.active { display: flex }
 
 /* ============================================= */
-/* === LOBBY SCREEN (Pre-join)               === */
+/* === LOBBY / DASHBOARD SCREEN              === */
 /* ============================================= */
 #screen-lobby {
   flex-direction: column;
-  background: var(--bg);
-  align-items: center;
-  justify-content: center;
+  background: #f6f7f8;
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
 }
+#screen-lobby.active { display: flex }
 
-.lobby-header {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.lobby-logo {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.lobby-logo span { opacity: .5; font-weight: 400; font-size: 14px }
-.lobby-header-actions { display: flex; gap: 8px }
-.lobby-header-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text2);
-  border-radius: 24px;
-  padding: 8px 16px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background .15s;
-  font-family: inherit;
-}
-.lobby-header-btn:hover { background: var(--surface2) }
-
-.lobby-container {
-  display: grid;
-  grid-template-columns: 1.2fr 380px;
-  gap: 32px;
-  max-width: 960px;
-  width: 92%;
-  align-items: center;
-}
-
-/* Camera preview card */
-.lobby-preview {
-  background: var(--stage-bg);
-  border-radius: 12px;
-  aspect-ratio: 16/10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-.lobby-preview-bg {
-  position: absolute;
+/* Settings modal */
+.settings-overlay {
+  display: none;
+  position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse at center, rgba(255,255,255,.03) 0%, transparent 70%);
-}
-.lobby-avatar {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #5c6bc0, #7c4dff);
-  display: flex;
+  background: rgba(0,0,0,.4);
+  z-index: 100;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
-  z-index: 1;
-  margin-bottom: 12px;
 }
-.lobby-user-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--stage-text);
-  z-index: 1;
-  min-height: 24px;
-}
-.lobby-mic-test {
-  z-index: 1;
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--stage-text2);
-}
-.lobby-mic-bar {
-  width: 120px;
-  height: 4px;
-  background: var(--stage-surface);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.lobby-mic-fill {
-  height: 100%;
-  width: 0%;
-  background: var(--call-green);
-  border-radius: 2px;
-  transition: width .05s;
-}
-
-/* Preview bottom buttons */
-.lobby-preview-controls {
-  position: absolute;
-  bottom: 16px;
-  display: flex;
-  gap: 12px;
-  z-index: 1;
-}
-.preview-ctrl-btn {
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: var(--stage-surface);
-  color: var(--stage-text);
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background .15s;
-}
-.preview-ctrl-btn:hover { background: #5f6368 }
-.preview-ctrl-btn.muted { background: var(--call-red); color: #fff }
-
-/* Settings panel */
-.lobby-settings {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 24px;
+.settings-overlay.show { display: flex }
+.settings-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: 75vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
 }
-.lobby-settings::-webkit-scrollbar { width: 4px }
-.lobby-settings::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px }
-.lobby-settings h2 {
-  font-size: 20px;
+.settings-modal h3 {
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text);
+  color: #202124;
   margin-bottom: 4px;
 }
-.lobby-settings .meeting-info {
-  font-size: 13px;
-  color: var(--text2);
-  margin-bottom: 4px;
-}
+.settings-modal::-webkit-scrollbar { width: 4px }
+.settings-modal::-webkit-scrollbar-thumb { background: #dadce0; border-radius: 2px }
 
-/* Form */
+/* Form (reused in settings modal) */
 .config-form { display: flex; flex-direction: column; gap: 12px }
-.config-form label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 2px; display: block }
+.config-form label { font-size: 12px; color: #5f6368; font-weight: 500; margin-bottom: 2px; display: block }
 .config-form input, .config-form select, .config-form textarea {
   width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text);
+  background: #fff;
+  border: 1px solid #dadce0;
+  color: #202124;
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
@@ -272,66 +153,44 @@ body {
   padding-right: 32px;
 }
 .config-form input:focus, .config-form select:focus, .config-form textarea:focus {
-  border-color: var(--call-blue);
+  border-color: #1a73e8;
   box-shadow: 0 0 0 2px rgba(26,115,232,.15);
 }
 .config-form textarea { resize: vertical; min-height: 80px }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
 
-/* Accordion in lobby */
-.lobby-accordion { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px }
+/* Lobby-accordion (reused in settings) */
+.lobby-accordion { border-top: 1px solid #dadce0; margin-top: 4px; padding-top: 4px }
 .lobby-accordion summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text2);
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; font-size: 13px; font-weight: 600; color: #5f6368;
+  cursor: pointer; list-style: none; user-select: none;
 }
 .lobby-accordion summary::-webkit-details-marker { display: none }
 .lobby-accordion summary::after {
-  content: '';
-  width: 7px; height: 7px;
-  border-right: 2px solid var(--text3);
-  border-bottom: 2px solid var(--text3);
-  transform: rotate(45deg);
-  transition: transform .2s ease;
+  content: ''; width: 7px; height: 7px;
+  border-right: 2px solid #80868b; border-bottom: 2px solid #80868b;
+  transform: rotate(45deg); transition: transform .2s ease;
 }
 .lobby-accordion[open] summary::after { transform: rotate(-135deg) }
 .accordion-body { padding: 8px 0 4px; display: flex; flex-direction: column; gap: 10px }
 
-/* Join button */
+/* Join button (reused in settings modal) */
 .btn-join {
-  background: var(--call-blue);
-  color: #202124;
-  border: none;
-  border-radius: 24px;
-  padding: 14px 32px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all .2s;
-  font-family: inherit;
-  letter-spacing: .02em;
-  text-align: center;
+  background: #1a73e8; color: #fff; border: none; border-radius: 12px;
+  padding: 14px 32px; font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: all .2s; font-family: inherit; text-align: center; width: 100%;
 }
-.btn-join:hover { background: #aecbfa; transform: translateY(-1px) }
+.btn-join:hover { background: #1967d2; transform: translateY(-1px) }
 .btn-join:active { transform: translateY(0) }
 .btn-join:disabled { opacity: .4; cursor: not-allowed; transform: none }
 
-/* Hint box (lobby) */
-.hint-box {
-  background: rgba(26,115,232,.04);
-  border-left: 3px solid var(--call-blue);
-  border-radius: 0 8px 8px 0;
-  padding: 12px 14px;
+/* Dashboard sidebar active link */
+.dash-nav-active {
+  background: rgba(19,127,236,.1);
+  color: #137fec;
+  font-weight: 600;
 }
-.hint-box .ht { font-size: 11px; color: var(--call-blue); font-weight: 700; margin-bottom: 4px }
-.hint-box .hc { font-size: 12px; color: var(--text2); line-height: 1.6 }
 
 /* ============================================= */
 /* === CALL SCREEN (Google Meet style)       === */
@@ -1051,143 +910,215 @@ body {
 <!-- LOBBY SCREEN                                -->
 <!-- =========================================== -->
 <div id="screen-lobby" class="screen active">
-  <div class="lobby-header">
-    <div class="lobby-logo">AI営業ロープレ <span>v2</span></div>
-    <div class="lobby-header-actions">
-      <button onclick="showUsageDashboard()" class="lobby-header-btn">利用状況</button>
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+
+<!-- Dashboard Header -->
+<header class="flex items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6 py-3 shrink-0">
+  <div class="flex items-center gap-4 sm:gap-6">
+    <div class="flex items-center gap-2">
+      <div class="text-primary flex items-center justify-center">
+        <span class="material-symbols-outlined text-2xl sm:text-3xl">video_chat</span>
+      </div>
+      <h1 class="text-slate-800 text-lg sm:text-xl font-bold tracking-tight">AI Sales Pro</h1>
+    </div>
+  </div>
+  <div class="flex items-center gap-2 sm:gap-4">
+    <button onclick="openSettingsAndStart()" class="hidden sm:flex items-center gap-2 px-4 h-10 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm">
+      <span class="material-symbols-outlined text-xl">add</span>
+      <span>カスタム開始</span>
+    </button>
+    <button onclick="showUsageDashboard()" class="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors" title="利用状況">
+      <span class="material-symbols-outlined">bar_chart</span>
+    </button>
+    <button onclick="openSettings()" class="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors" title="設定">
+      <span class="material-symbols-outlined">settings</span>
+    </button>
+  </div>
+</header>
+
+<div class="flex flex-1 overflow-hidden">
+
+<!-- Sidebar (desktop only) -->
+<aside class="w-56 border-r border-slate-200 bg-white flex-col justify-between py-6 shrink-0 hidden lg:flex">
+  <nav class="flex flex-col gap-1 px-3">
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-semibold cursor-pointer" id="navDashboard" onclick="showDashSection('scenarios')">
+      <span class="material-symbols-outlined">grid_view</span>
+      <span class="text-sm">ダッシュボード</span>
+    </a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer" id="navHistory" onclick="showDashSection('history')">
+      <span class="material-symbols-outlined">history</span>
+      <span class="text-sm">履歴</span>
+    </a>
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer" id="navSkills" onclick="showDashSection('skills')">
+      <span class="material-symbols-outlined">analytics</span>
+      <span class="text-sm">スキル分析</span>
+    </a>
+  </nav>
+  <div class="flex flex-col gap-1 px-3">
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer" onclick="openSettings()">
+      <span class="material-symbols-outlined">settings</span>
+      <span class="text-sm">設定</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto bg-[#f6f7f8] p-4 sm:p-6 md:p-8">
+<div class="max-w-7xl mx-auto">
+
+  <!-- Scenarios Section -->
+  <div id="dashScenarios">
+    <div class="mb-6 sm:mb-8">
+      <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">シナリオを選択</h2>
+      <p class="text-slate-500 text-sm sm:text-base mt-1">練習したい営業シチュエーションを選んでください。</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6" id="scenarioGrid"></div>
+  </div>
+
+  <!-- History Section (hidden by default) -->
+  <div id="dashHistory" style="display:none">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-slate-900 tracking-tight">練習履歴</h2>
+      <p class="text-slate-500 text-sm mt-1">過去のセッション結果を確認できます。</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+      <div class="history-list" id="historyList"><span style="font-size:13px;color:#5f6368">まだ履歴なし</span></div>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 p-6 mt-4">
+      <div style="font-size:13px;font-weight:700;color:#5f6368;margin-bottom:12px">スコアトレンド</div>
+      <div class="trend-chart-wrap"><canvas id="trendChart"></canvas></div>
     </div>
   </div>
 
-  <div class="lobby-container">
-    <!-- Camera Preview -->
-    <div class="lobby-preview">
-      <div class="lobby-preview-bg"></div>
-      <div class="lobby-avatar" id="lobbyAvatar">🧑‍💼</div>
-      <div class="lobby-user-name" id="lobbyUserName">担当者名を入力</div>
-      <div class="lobby-mic-test">
-        <span>🎤</span>
-        <div class="lobby-mic-bar"><div class="lobby-mic-fill" id="lobbyMicFill"></div></div>
-        <span id="lobbyMicStatus">待機中</span>
-      </div>
-      <div class="lobby-preview-controls">
-        <button class="preview-ctrl-btn" id="lobbyMicBtn" onclick="toggleLobbyMic()" title="マイクテスト">🎤</button>
-      </div>
+  <!-- Skills Section (hidden by default) -->
+  <div id="dashSkills" style="display:none">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-slate-900 tracking-tight">スキル分析</h2>
+      <p class="text-slate-500 text-sm mt-1">各スキル軸のスコア推移を確認できます。</p>
     </div>
-
-    <!-- Settings -->
-    <div class="lobby-settings">
-      <h2>ロープレに参加</h2>
-      <div class="meeting-info" id="meetingInfo">AI顧客との営業ロールプレイ</div>
-
-      <div class="config-form">
-        <div class="form-row">
-          <div><label>担当者名</label><input type="text" id="salesName" placeholder="例: 高橋" oninput="updateLobbyName()"></div>
-          <div><label>商材</label>
-            <select id="product">
-              <option value="ISAI">ISAI（AIマーケタースクール）</option>
-              <option value="Adoafi">Adoafi</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div><label>顧客ペルソナ</label>
-            <select id="persona" onchange="onPersonaChange()">
-              <option value="price">「高い」と言う顧客</option>
-              <option value="compare">「他と比べたい」顧客</option>
-              <option value="busy">「忙しくて時間がない」顧客</option>
-              <option value="spouse">「配偶者に相談したい」顧客</option>
-              <option value="doubt">「本当に効果あるの？」顧客</option>
-              <option value="custom">実商談トレース（↓ログ貼付）</option>
-            </select>
-          </div>
-          <div><label>難易度</label>
-            <select id="difficulty">
-              <option value="easy">易（乗りやすい顧客）</option>
-              <option value="medium" selected>中（普通の顧客）</option>
-              <option value="hard">難（頑固な顧客）</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="customPersonaBox" style="display:none">
-          <label>失注商談ログを貼り付け</label>
-          <textarea id="customTranscript" placeholder="商談の議事録、文字起こし、またはGAS FBツールの総評を貼り付けてください"></textarea>
-        </div>
-      </div>
-
-      <div class="hint-box">
-        <div class="ht">今回の練習ポイント</div>
-        <div class="hc" id="hintText"></div>
-      </div>
-
-      <!-- Advanced settings -->
-      <details class="lobby-accordion">
-        <summary>詳細設定</summary>
-        <div class="accordion-body config-form">
-          <div><label>克服すべき弱点</label>
-            <select id="weakPoint" onchange="updateHint()">
-              <option value="anchoring">アンカリング（価格提示）</option>
-              <option value="authority">権威性（選ぶ側スタンス）</option>
-              <option value="loss_aversion">損失回避（現状リスク指摘）</option>
-              <option value="reframing">リフレーミング（スクール→研修）</option>
-              <option value="closing">クロージング（言い切り誘導）</option>
-              <option value="hearing">ヒアリング（課題の深堀り）</option>
-              <option value="rapport">ラポール（信頼構築）</option>
-              <option value="objection">反論処理（切り返し力）</option>
-              <option value="tempo">テンポ（会話のリズム）</option>
-              <option value="proposal">提案力（解決策の具体性）</option>
-            </select>
-          </div>
-          <div><label>シナリオ</label>
-            <select id="scenario">
-              <option value="full">フル商談（自由会話）</option>
-              <option value="opening">冒頭5分（アイスブレイク→ヒアリング）</option>
-              <option value="price_objection">価格提示後の切り返し</option>
-              <option value="closing_3min">クロージング最後の3分</option>
-            </select>
-          </div>
-          <div><label>Gemini API Key</label><input type="password" id="apiKey" placeholder="AIzaSy..."></div>
-          <div><label>モデル</label>
-            <select id="modelName">
-              <option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio（約44円/10分）</option>
-            </select>
-          </div>
-          <div><label><input type="checkbox" id="saveKey" style="width:auto;margin-right:6px">API Keyを保存する</label></div>
-        </div>
-      </details>
-
-      <!-- Score & History -->
-      <details class="lobby-accordion">
-        <summary>スコア & 履歴</summary>
-        <div class="accordion-body">
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--call-text2);margin-bottom:6px">前回スコア</div>
-            <div class="score-preview" id="scorePreview"></div>
-          </div>
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--call-text2);margin-bottom:6px">スコアトレンド</div>
-            <div class="trend-chart-wrap"><canvas id="trendChart"></canvas></div>
-          </div>
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--call-text2);margin-bottom:6px">練習履歴</div>
-            <div class="history-list" id="historyList"><span style="font-size:11px;color:var(--call-text2)">まだ履歴なし</span></div>
-          </div>
-        </div>
-      </details>
-
-      <!-- GAS Integration -->
-      <details class="lobby-accordion">
-        <summary>GAS商談FB連携</summary>
-        <div class="accordion-body config-form">
-          <div><label>GAS Web App URL</label><input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/..." style="font-size:12px"></div>
-          <button onclick="fetchLossData()" style="background:rgba(138,180,248,.08);border:1px solid rgba(138,180,248,.2);color:var(--call-blue);padding:8px 12px;font-size:12px;width:100%;border-radius:8px;cursor:pointer;font-family:inherit">失注データ取得</button>
-          <select id="lossSelect" style="display:none;width:100%;background:var(--call-bg);border:1px solid var(--call-border);color:var(--call-text);border-radius:8px;padding:10px;font-size:12px"></select>
-        </div>
-      </details>
-
-      <button class="btn-join" id="btnJoin" onclick="joinMeeting()">ミーティングに参加</button>
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+      <div class="score-preview" id="scorePreview"></div>
     </div>
   </div>
+
+</div>
+</main>
+
+</div>
+
+<!-- Mobile FAB -->
+<div class="fixed bottom-6 right-6 lg:hidden z-50">
+  <button onclick="openSettingsAndStart()" class="flex items-center justify-center w-14 h-14 rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-colors">
+    <span class="material-symbols-outlined text-2xl">add</span>
+  </button>
+</div>
+
+</div>
+
+<!-- Hidden form inputs (used by startSession) -->
+<div style="display:none">
+  <input type="text" id="salesName" value="">
+  <select id="product"><option value="ISAI">ISAI</option><option value="Adoafi">Adoafi</option></select>
+  <select id="persona">
+    <option value="price">price</option><option value="compare">compare</option>
+    <option value="busy">busy</option><option value="spouse">spouse</option>
+    <option value="doubt">doubt</option><option value="custom">custom</option>
+  </select>
+  <select id="difficulty"><option value="easy">easy</option><option value="medium" selected>medium</option><option value="hard">hard</option></select>
+  <select id="weakPoint">
+    <option value="anchoring">anchoring</option><option value="authority">authority</option>
+    <option value="loss_aversion">loss_aversion</option><option value="reframing">reframing</option>
+    <option value="closing">closing</option><option value="hearing">hearing</option>
+    <option value="rapport">rapport</option><option value="objection">objection</option>
+    <option value="tempo">tempo</option><option value="proposal">proposal</option>
+  </select>
+  <select id="scenario">
+    <option value="full">full</option><option value="opening">opening</option>
+    <option value="price_objection">price_objection</option><option value="closing_3min">closing_3min</option>
+  </select>
+  <input type="password" id="apiKey" value="">
+  <select id="modelName"><option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio</option></select>
+  <input type="checkbox" id="saveKey">
+  <textarea id="customTranscript"></textarea>
+  <div id="customPersonaBox"></div>
+  <div id="hintText"></div>
+  <input type="text" id="gasUrl" value="">
+  <select id="lossSelect"></select>
+</div>
+
+<!-- Settings Modal -->
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-modal">
+    <div class="flex items-center justify-between mb-2">
+      <h3 style="margin:0">セッション設定</h3>
+      <button onclick="closeSettings()" class="p-1 rounded-full hover:bg-slate-100 transition-colors">
+        <span class="material-symbols-outlined text-slate-500">close</span>
+      </button>
+    </div>
+    <div class="config-form">
+      <div class="form-row">
+        <div><label>担当者名</label><input type="text" id="settSalesName" placeholder="例: 高橋"></div>
+        <div><label>商材</label>
+          <select id="settProduct">
+            <option value="ISAI">ISAI（AIマーケタースクール）</option>
+            <option value="Adoafi">Adoafi</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label>顧客ペルソナ</label>
+          <select id="settPersona">
+            <option value="price">「高い」と言う顧客</option>
+            <option value="compare">「他と比べたい」顧客</option>
+            <option value="busy">「忙しくて時間がない」顧客</option>
+            <option value="spouse">「配偶者に相談したい」顧客</option>
+            <option value="doubt">「本当に効果あるの？」顧客</option>
+          </select>
+        </div>
+        <div><label>難易度</label>
+          <select id="settDifficulty">
+            <option value="easy">易（乗りやすい顧客）</option>
+            <option value="medium" selected>中（普通の顧客）</option>
+            <option value="hard">難（頑固な顧客）</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label>弱点</label>
+          <select id="settWeakPoint">
+            <option value="anchoring">アンカリング</option>
+            <option value="authority">権威性</option>
+            <option value="loss_aversion">損失回避</option>
+            <option value="reframing">リフレーミング</option>
+            <option value="closing">クロージング</option>
+            <option value="hearing">ヒアリング</option>
+            <option value="rapport">ラポール</option>
+            <option value="objection">反論処理</option>
+            <option value="tempo">テンポ</option>
+            <option value="proposal">提案力</option>
+          </select>
+        </div>
+        <div><label>シナリオ</label>
+          <select id="settScenario">
+            <option value="full">フル商談</option>
+            <option value="opening">冒頭5分</option>
+            <option value="price_objection">価格切り返し</option>
+            <option value="closing_3min">CL 3分</option>
+          </select>
+        </div>
+      </div>
+      <details class="lobby-accordion">
+        <summary>API設定</summary>
+        <div class="accordion-body config-form">
+          <div><label>Gemini API Key</label><input type="password" id="settApiKey" placeholder="AIzaSy..."></div>
+          <div><label><input type="checkbox" id="settSaveKey" style="width:auto;margin-right:6px">API Keyを保存する</label></div>
+        </div>
+      </details>
+    </div>
+    <button class="btn-join" onclick="startFromSettings()">セッションを開始</button>
+  </div>
+</div>
+
 </div>
 
 <!-- =========================================== -->
@@ -1292,9 +1223,6 @@ body {
     </div>
   </div>
   <div class="flex items-center gap-3">
-    <button class="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all" id="btnExportReport">
-      <span class="truncate">レポートを書き出す</span>
-    </button>
     <button class="flex cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-all" onclick="backToLobby()">
       <span class="material-symbols-outlined mr-1" style="font-size:18px">arrow_back</span> 新しいセッション
     </button>
@@ -1505,6 +1433,163 @@ const SCENARIO_LABELS={full:'フル商談',opening:'冒頭5分',price_objection:
 const SUB_NAMES={authority:'権威性',loss_aversion:'損失回避',reframing:'リフレーミング',anchoring:'アンカー',closing:'クロージング',hearing:'ヒアリング',rapport:'ラポール',objection:'反論処理',tempo:'テンポ',proposal:'提案力'};
 const ALL_SUBS=Object.keys(SUB_NAMES);
 
+// === SCENARIO CARDS ===
+const SCENARIO_CARDS=[
+  {
+    id:'discovery', title:'新規開拓ヒアリング',
+    difficulty:'medium', diffLabel:'中級', diffClass:'bg-blue-500/90',
+    persona:'busy', scenario:'opening', weakPoint:'hearing',
+    desc:'課題の深掘りとキーマンの特定を行うスキルを習得します。',
+    personaName:'田中 美咲', personaRole:'営業部長',
+    img:'https://lh3.googleusercontent.com/aida-public/AB6AXuBH_qTHvxSjiutjJTDEiIh_zDdR8u7fKIFA1PRe_A6t5yCsa37HuPU1tKM7c72y0xThbuUztI4Fzzd98oZEf8TD3fRVWJS7LAygpNcMSxHmXAke9_8echwhY4lx5FFVnHUc1OyMgRiDWMJW8UZLo_J6LMXnpy9KvfpEpeI94PnjWRbGcGZbnMhuZRTq2usu3Yv_nLSszoDbtYSNUKMXPqZMXXN7tRJacH3iPJRW_rtoSHd9FpwBxpr_P68ZzYwSF8jUx7Br3hzxnMY',
+    avatar:'https://lh3.googleusercontent.com/aida-public/AB6AXuCv1FaTmB99zyOGDNVGrjzNIIWjfLk-AA6O0Wz4BJswkjrdlgu7Iw1G3hyWHmfnjYvVpuiJCDp96z8_VoKKXFOb7bzVhVabQ8HI1ahGpjHOqqwi6ABTj-z0mHrqeY8a1BgVRIwydN49oH8YJLpjPorG24ETmy_NI7XBnwSy5_THLp7h_FbgZ7JMqpH-Wm5zr7KP49CugDAL8O2DT8xnAsdZwvlcOtvAodDZVj5KrSA_g3jKYsHV754tqcQ_P2PuKpkxtI0hyAmrUOA'
+  },
+  {
+    id:'price', title:'価格交渉・クロージング',
+    difficulty:'hard', diffLabel:'上級', diffClass:'bg-red-500/90',
+    persona:'price', scenario:'price_objection', weakPoint:'anchoring',
+    desc:'「高い」と言われた瞬間の切り返しと、投資価値の伝え方を練習します。',
+    personaName:'佐藤 健太', personaRole:'購買責任者',
+    img:'https://lh3.googleusercontent.com/aida-public/AB6AXuCbqiQ6227dEpAT9QcsU7vKhBGfjtEgmFMgOKh22wN2GafyJTjazTXWqFZlLBW31jZomQd8OrORBtQfYTEojxGgYXEzpkFsKm7XzLcR-832bCQ691l9eLd4tM9K_gqUPr8g_Zi-kO9FwcLBY0T0xldgUGcsqGgE84ShYJc5Ew9txO2bbox0GWy6HJ72qjHisxo6iJ4deGdj-Ksm_XG3rlK8jhlEmus6G4_oMC8bUl1iuhObJ1y-MY2HdqRzEwhR6H5oMYPfmq0ey80',
+    avatar:'https://lh3.googleusercontent.com/aida-public/AB6AXuBC2rKEy7hqy9WwbKCqI82bsaqCVnmIl5NPYH6PRPNvpruzfq_JbGx-QyrICRTdnHN7g_Lmvz-5hs2C5YTc9nglfwuHPllsRJTvTllZSO05ElS1CNpT1fcRu3DlZZpsYmTTPAwVaOZMy1zupbcX3cvIzZWCP260kQCtzK8q_lU8jRVgfVPmeY4q6foS81Aq9xZ4rqw8Z0bnV3XfjJ3cgtKaCDjjW4pFVu9FfdetPsAb4bCM3BrRSLMofr1Wztdh6aNdr2mVOeSyRFw'
+  },
+  {
+    id:'objection', title:'競合比較・反論処理',
+    difficulty:'medium', diffLabel:'中級', diffClass:'bg-blue-500/90',
+    persona:'compare', scenario:'full', weakPoint:'objection',
+    desc:'「他社と比較したい」という顧客に対し、自社の優位性を的確に伝える練習を行います。',
+    personaName:'鈴木 恵理', personaRole:'ITディレクター',
+    img:'https://lh3.googleusercontent.com/aida-public/AB6AXuCo6CZSgHGsApHaqO8Bp3jBl5X3Z5eLbDK7QXL3sJunaQNIBngmrNzu4Tkwkgr5zPXgx6O3O4vi5bjXbhq9bgE0UhUmDIQGaSku_B6geYPZTY3pEUL_uNPHOWVpMxwa7jG4i5AvIr9dh69GKJz1xUVqlKMCPrfZ-awpjE5GYuTAe1h7lG1nmIrOhvBr2hVsryY3BR1c6whgPVBOmxkJX-pEzRdEtQXKwJfU9YnWUhkBF5Ur04ZmQCghoYT6rV0NcAoUX3NqSZPMUvc',
+    avatar:'https://lh3.googleusercontent.com/aida-public/AB6AXuDUSvR58yAlLhywW_Rx0RpJR0KcPXtPjENTyliA6TxBDZoPeENj31RtpJglyvVybQ5B2gROZPyMzt2Baxh3AAjsd9DjM3r4mkX287SxbDsWGcVjM1j1wwxEHp_dO-S_MqDjc0Keh3OUbRutsN3vWYZe_O-xoO2H50qdBpmtLVNFh-aaCmn_GQq7m3QMYdpMNlg04n4ORC0jE1GIwe30xgBQTCa3G49uKBAwrY_0vBtFTHMZm3R-MXWf8FwZZvzSoLXZxeheXMLGsmY'
+  },
+  {
+    id:'executive', title:'経営層向けプレゼン',
+    difficulty:'hard', diffLabel:'エキスパート', diffClass:'bg-purple-600/90',
+    persona:'doubt', scenario:'full', weakPoint:'proposal',
+    desc:'CEOへの重要プレゼン。戦略的な整合性、ビジョン、長期的なビジネス価値にフォーカスします。',
+    personaName:'山本 剛志', personaRole:'CEO',
+    img:'https://lh3.googleusercontent.com/aida-public/AB6AXuAuMA7eueSSQ3H3XYPcjmwZsvJ5KdpjSYkVtMfItxAC1q7WL5kMmtUh7ZPOu7MpFTo9B5kVZDjnT-N-aiTYKThvIDz4E5QTcuS8H-OAMoUPrMyik-K_UioCecM06v0JBT9onHwF2wDT6vqz78RrQ0YJqLeqym6Y6k5-VQV8Q7gY6WV5_COvIzCp81AYw9U2_ydfVaGDYet_7C0CsoOLjV2GcxalZxr0VFklP4EizAMIELGEYKDmdtz1WYE1ORXzhjohEUiCjMhX9zA',
+    avatar:'https://lh3.googleusercontent.com/aida-public/AB6AXuD5qtcSgYFcqz-acSAhTmKZvxsOPqTtIp34D7glJMPyZz834IbrOuzHUh3nUBweJN82P3uncdohludy5RwMFo6ItKvRgb3KKnFCl46szTyym5O5-lmvZD7siZbuqdAFDi7PFvSZXuTb2OV2IuE2NDUChmyYGeNWDJl79a6DTquYY1x7lf2lazF0xihxKAYltKKJuaiZxS00--GXVxnJOQJWuJM2xlcTrFW_mC1dRq2q07MjCvIq69A9-a5CKJdmyg2TCPh35VESTmg'
+  },
+  {
+    id:'demo', title:'製品デモ・説明',
+    difficulty:'easy', diffLabel:'初級', diffClass:'bg-green-500/90',
+    persona:'doubt', scenario:'opening', weakPoint:'proposal',
+    desc:'業務効率化に関心を持つ担当者に対し、機能にフォーカスしたデモを行います。',
+    personaName:'中村 あゆみ', personaRole:'プロダクトリード',
+    img:'https://lh3.googleusercontent.com/aida-public/AB6AXuD5O_TFIm-TSak6j4TnKf43yZSrX1sgSa_tcrPRYt2jLWuHhwOXrEwxX2NTUeXo3aEOk2Z8SxTrTYwnsiW0ASHac3XXejDQbGX9d6wEiDAgQo7joa3amAyQ-F9x-vYIDo41L8K5lTL2Zad6Xe1kCUKmbmfmtX_IMxbvK2JlLwDLGz4gnRQL2brVkGYL64dkeewB4vUMR_r-pxxMbIBILjCcizEifb2Ee5tBmg8s1Kvg9axNlLfE9pZYIhH6sF4Xo2Us27HuxVDDj6g',
+    avatar:'https://lh3.googleusercontent.com/aida-public/AB6AXuCE7RWOvxNUxdkS5zgZ1rOAb_bkyCWDT6xjwa9CkBs3O13h41ry-6UfDITZOdEUFI6ow21IYLxX3OTOQMcVoLMQ3-YpBcLJVRfFvjpRmbnX2o2LRAqQQS2DZiq58PVndZs_hMi79CAFEsAt8VC7HDC51xHcW7Ahgr9EeNERLFEFdLSbz0Gq6cGaBfb0V0RHZJ_VbbK6hwikKpl8esXVkMWfbMdi7T7Dbes49MVZtGkXZSGWfJ7Hg8RV9Vjvfl7wn_qIBNquCs4w7qc'
+  },
+  {
+    id:'closing', title:'クロージング交渉',
+    difficulty:'hard', diffLabel:'上級', diffClass:'bg-red-500/90',
+    persona:'spouse', scenario:'closing_3min', weakPoint:'closing',
+    desc:'商談終盤の合意形成。決断を迷う顧客を3分でクロージングまで持っていく練習です。',
+    personaName:'高橋 裕也', personaRole:'CFO',
+    img:'https://lh3.googleusercontent.com/aida-public/AB6AXuDMCx-qFqHgLUv95OY0uk-0PgNq9miGPSiirssJImgju8MIXCeh4FKWPlxPAa-Dx4Fuck-22cJSmJ1epjst3HEPxEtY6WmxGMezx3Scw_xmAq2DYKfK4J-iEJSbJnWTUHvm6wxKVO6ekquQsQpZJNoCYZZgL3C30ZeDWIji5OCI-w4HcLlSeufw-TprYSFWp-zomtHOqVeDwLK4nTO_2Utv75sLQxwHf5TU0upJviBd3pHWeaPkvPxyI36gfMtr5-FmtJdYb2Xi45k',
+    avatar:'https://lh3.googleusercontent.com/aida-public/AB6AXuBfyLU_H5m1q862SEcg6Z-Iia8CAf_-7GU4Vkk6rrQ2XsJ9Co3YZSxze5D9Rml1gBi7ogKVdU0jy__E4n1NwjAF_Zpok2f2h7BRvvU37F4sdQAuJMJt2IMPF_ZXXE0KthDF6lV69ECnC6PdCnVzhH1ExYvPQfRIVowxMByEHbGpAUYA5dPxY-rDv7uqzwnh3oK0PFdqb_SCQA2IZvDTpGQwm0ih1s0ZWImpcJSI3ybTAzg7fS7IHMZdm_fBPoLO-HTqoJFEk8-x9o4'
+  }
+];
+
+function renderScenarioCards(){
+  const grid=document.getElementById('scenarioGrid');
+  if(!grid)return;
+  grid.innerHTML=SCENARIO_CARDS.map(c=>`
+    <div class="group bg-white rounded-xl overflow-hidden border border-slate-200 hover:shadow-xl hover:border-primary/30 transition-all cursor-pointer" onclick="startScenario('${c.id}')">
+      <div class="relative aspect-video overflow-hidden">
+        <div class="absolute inset-0 bg-primary/5 group-hover:bg-transparent transition-colors z-10"></div>
+        <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="${c.img}" alt="${c.title}">
+        <div class="absolute top-3 left-3 z-20">
+          <span class="px-2.5 py-1 rounded-full ${c.diffClass} text-white text-[10px] font-bold uppercase tracking-wider">${c.diffLabel}</span>
+        </div>
+      </div>
+      <div class="p-4 sm:p-5">
+        <h3 class="text-base sm:text-lg font-bold text-slate-800 group-hover:text-primary transition-colors leading-tight mb-2">${c.title}</h3>
+        <div class="flex items-center gap-2 mb-3">
+          <div class="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
+            <img class="h-full w-full object-cover" src="${c.avatar}" alt="${c.personaName}">
+          </div>
+          <span class="text-sm font-medium text-slate-600">${c.personaName}</span>
+          <span class="text-xs text-slate-400">${c.personaRole}</span>
+        </div>
+        <p class="text-sm text-slate-500 line-clamp-2 mb-4">${c.desc}</p>
+        <button class="w-full py-2.5 rounded-lg bg-slate-50 text-slate-700 text-sm font-semibold group-hover:bg-primary group-hover:text-white transition-all">セッションを開始</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function startScenario(id){
+  const card=SCENARIO_CARDS.find(c=>c.id===id);
+  if(!card)return;
+  const apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey){
+    // Open settings with focus on API key
+    openSettings();
+    setTimeout(()=>{
+      const el=document.getElementById('settApiKey');
+      if(el){el.focus();el.scrollIntoView({behavior:'smooth'})}
+    },300);
+    return;
+  }
+  // Set hidden form values
+  document.getElementById('persona').value=card.persona;
+  document.getElementById('difficulty').value=card.difficulty;
+  document.getElementById('weakPoint').value=card.weakPoint;
+  document.getElementById('scenario').value=card.scenario;
+  joinMeeting();
+}
+
+function openSettings(){
+  // Sync current values to settings modal
+  document.getElementById('settSalesName').value=document.getElementById('salesName').value;
+  document.getElementById('settProduct').value=document.getElementById('product').value;
+  document.getElementById('settPersona').value=document.getElementById('persona').value;
+  document.getElementById('settDifficulty').value=document.getElementById('difficulty').value;
+  document.getElementById('settWeakPoint').value=document.getElementById('weakPoint').value;
+  document.getElementById('settScenario').value=document.getElementById('scenario').value;
+  document.getElementById('settApiKey').value=document.getElementById('apiKey').value;
+  document.getElementById('settSaveKey').checked=document.getElementById('saveKey').checked;
+  document.getElementById('settingsOverlay').classList.add('show');
+}
+
+function openSettingsAndStart(){
+  openSettings();
+}
+
+function closeSettings(){
+  document.getElementById('settingsOverlay').classList.remove('show');
+}
+
+function startFromSettings(){
+  // Sync settings modal values back to hidden form
+  document.getElementById('salesName').value=document.getElementById('settSalesName').value;
+  document.getElementById('product').value=document.getElementById('settProduct').value;
+  document.getElementById('persona').value=document.getElementById('settPersona').value;
+  document.getElementById('difficulty').value=document.getElementById('settDifficulty').value;
+  document.getElementById('weakPoint').value=document.getElementById('settWeakPoint').value;
+  document.getElementById('scenario').value=document.getElementById('settScenario').value;
+  document.getElementById('apiKey').value=document.getElementById('settApiKey').value;
+  document.getElementById('saveKey').checked=document.getElementById('settSaveKey').checked;
+  closeSettings();
+  joinMeeting();
+}
+
+function showDashSection(section){
+  document.getElementById('dashScenarios').style.display=section==='scenarios'?'':'none';
+  document.getElementById('dashHistory').style.display=section==='history'?'':'none';
+  document.getElementById('dashSkills').style.display=section==='skills'?'':'none';
+  // Update sidebar active state
+  ['navDashboard','navHistory','navSkills'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const isActive=(id==='navDashboard'&&section==='scenarios')||(id==='navHistory'&&section==='history')||(id==='navSkills'&&section==='skills');
+    el.className=isActive
+      ?'flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-semibold cursor-pointer'
+      :'flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer';
+  });
+}
+
 let ws=null,audioContext=null,processor=null,mediaStream=null,sessionActive=false,intentionalClose=false;
 let conversationLog=[],timerInterval=null,startTime=null,volumeAnimFrame=null,analyserNode=null;
 let turnCount=0,playbackCtx=null,currentSource=null,silenceTimer=null;
@@ -1532,6 +1617,7 @@ updateHint();
 initScoreBars();
 loadApiKey();
 loadHistory();
+renderScenarioCards();
 
 function initScoreBars(){
   const el=document.getElementById('scorePreview');
@@ -1551,44 +1637,12 @@ function onPersonaChange(){
 }
 
 function updateLobbyName(){
-  const name=document.getElementById('salesName').value.trim();
-  document.getElementById('lobbyUserName').textContent=name||'担当者名を入力';
+  // No longer needed in dashboard mode
 }
 
 // === LOBBY MIC TEST ===
 async function toggleLobbyMic(){
-  const btn=document.getElementById('lobbyMicBtn');
-  if(lobbyMicStream){
-    lobbyMicStream.getTracks().forEach(t=>t.stop());
-    lobbyMicStream=null;
-    if(lobbyAudioCtx){lobbyAudioCtx.close();lobbyAudioCtx=null}
-    lobbyAnalyser=null;
-    btn.classList.remove('muted');
-    btn.textContent='🎤';
-    document.getElementById('lobbyMicFill').style.width='0%';
-    document.getElementById('lobbyMicStatus').textContent='待機中';
-    return;
-  }
-  try{
-    lobbyMicStream=await navigator.mediaDevices.getUserMedia({audio:true});
-    lobbyAudioCtx=new AudioContext();
-    const src=lobbyAudioCtx.createMediaStreamSource(lobbyMicStream);
-    lobbyAnalyser=lobbyAudioCtx.createAnalyser();
-    lobbyAnalyser.fftSize=256;
-    src.connect(lobbyAnalyser);
-    btn.textContent='🎤';
-    document.getElementById('lobbyMicStatus').textContent='テスト中';
-    const data=new Uint8Array(lobbyAnalyser.frequencyBinCount);
-    (function tick(){
-      if(!lobbyAnalyser)return;
-      lobbyAnalyser.getByteFrequencyData(data);
-      const avg=data.reduce((a,b)=>a+b,0)/data.length;
-      document.getElementById('lobbyMicFill').style.width=Math.min(100,avg*2)+'%';
-      requestAnimationFrame(tick);
-    })();
-  }catch(e){
-    document.getElementById('lobbyMicStatus').textContent='マイクエラー';
-  }
+  // Mic test removed in dashboard redesign
 }
 
 // === STATUS ===
@@ -1753,7 +1807,7 @@ function resetSilenceTimer(){
 // === JOIN MEETING ===
 function joinMeeting(){
   const apiKey=document.getElementById('apiKey').value.trim();
-  if(!apiKey){alert('API Keyを入力してください（詳細設定内）');return}
+  if(!apiKey){alert('API Keyを入力してください（設定画面から登録）');openSettings();return}
 
   // Stop lobby mic test if running
   if(lobbyMicStream){
