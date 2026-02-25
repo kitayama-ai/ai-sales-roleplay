@@ -1854,11 +1854,13 @@ ${customLog.substring(0,3000)}
           system_instruction:{parts:[{text:systemPrompt}]}
         }
       };
+      console.log('Setup payload:', JSON.stringify(setupPayload).substring(0,500));
       ws.send(JSON.stringify(setupPayload));
     };
 
     ws.onmessage=async(e)=>{
       const raw=typeof e.data==='string'?e.data:await e.data.text();
+      console.log('WS received:', raw.substring(0,300));
       const data=JSON.parse(raw);
 
       if(data.setupComplete){
@@ -1916,7 +1918,7 @@ ${customLog.substring(0,3000)}
     };
 
     ws.onerror=(e)=>{console.error('WS Error',e);clearTimeout(connectTimeout);setStatus('','接続エラー');addMsg('system','❌ WebSocket接続エラー');stopSession();showScreen('lobby')};
-    ws.onclose=(e)=>{clearTimeout(connectTimeout);if(sessionActive){setStatus('','セッション終了');sessionActive=false}};
+    ws.onclose=(e)=>{console.log('WS Close: code='+e.code+' reason='+e.reason);clearTimeout(connectTimeout);if(sessionActive){setStatus('','セッション終了');sessionActive=false}else{setStatus('','接続失敗 (code:'+e.code+')');addMsg('system','❌ code:'+e.code+' — '+e.reason);showScreen('lobby')}};
   }catch(err){alert('接続失敗: '+err.message);showScreen('lobby')}
 }
 
