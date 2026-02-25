@@ -96,38 +96,8 @@ body {
 }
 #screen-lobby.active { display: flex }
 
-/* Settings modal */
-.settings-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.4);
-  z-index: 100;
-  align-items: center;
-  justify-content: center;
-}
-.settings-overlay.show { display: flex }
-.settings-modal {
-  background: #fff;
-  border-radius: 16px;
-  padding: 28px;
-  width: 90%;
-  max-width: 480px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,.2);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.settings-modal h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #202124;
-  margin-bottom: 4px;
-}
-.settings-modal::-webkit-scrollbar { width: 4px }
-.settings-modal::-webkit-scrollbar-thumb { background: #dadce0; border-radius: 2px }
+/* Config panel highlight */
+[data-scenario-card].ring-2 { box-shadow: 0 0 0 2px #137fec }
 
 /* Form (reused in settings modal) */
 .config-form { display: flex; flex-direction: column; gap: 12px }
@@ -923,14 +893,14 @@ body {
     </div>
   </div>
   <div class="flex items-center gap-2 sm:gap-4">
-    <button onclick="openSettingsAndStart()" class="hidden sm:flex items-center gap-2 px-4 h-10 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm">
+    <button onclick="scrollToConfig()" class="hidden sm:flex items-center gap-2 px-4 h-10 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm">
       <span class="material-symbols-outlined text-xl">add</span>
       <span>カスタム開始</span>
     </button>
     <button onclick="showUsageDashboard()" class="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors" title="利用状況">
       <span class="material-symbols-outlined">bar_chart</span>
     </button>
-    <button onclick="openSettings()" class="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors" title="設定">
+    <button onclick="scrollToConfig()" class="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors" title="設定">
       <span class="material-symbols-outlined">settings</span>
     </button>
   </div>
@@ -955,7 +925,7 @@ body {
     </a>
   </nav>
   <div class="flex flex-col gap-1 px-3">
-    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer" onclick="openSettings()">
+    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer" onclick="scrollToConfig()">
       <span class="material-symbols-outlined">settings</span>
       <span class="text-sm">設定</span>
     </a>
@@ -970,9 +940,110 @@ body {
   <div id="dashScenarios">
     <div class="mb-6 sm:mb-8">
       <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">シナリオを選択</h2>
-      <p class="text-slate-500 text-sm sm:text-base mt-1">練習したい営業シチュエーションを選んでください。</p>
+      <p class="text-slate-500 text-sm sm:text-base mt-1">カードを選ぶと設定がプリセットされます。下の設定パネルで調整も可能です。</p>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6" id="scenarioGrid"></div>
+
+    <!-- Session Config Panel -->
+    <div class="mt-8 bg-white rounded-xl border border-slate-200 p-5 sm:p-7" id="configPanel">
+      <div class="flex items-center gap-2 mb-5">
+        <span class="material-symbols-outlined text-primary">tune</span>
+        <h3 class="text-lg font-bold text-slate-800">セッション設定</h3>
+        <span class="text-xs text-slate-400 ml-2" id="presetLabel"></span>
+      </div>
+
+      <div class="config-form">
+        <div class="form-row">
+          <div><label>担当者名</label><input type="text" id="salesName" placeholder="例: 高橋" oninput="updateLobbyName()"></div>
+          <div><label>商材</label>
+            <select id="product">
+              <option value="ISAI">ISAI（AIマーケタースクール）</option>
+              <option value="Adoafi">Adoafi</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div><label>顧客ペルソナ</label>
+            <select id="persona" onchange="onPersonaChange()">
+              <option value="price">「高い」と言う顧客</option>
+              <option value="compare">「他と比べたい」顧客</option>
+              <option value="busy">「忙しくて時間がない」顧客</option>
+              <option value="spouse">「配偶者に相談したい」顧客</option>
+              <option value="doubt">「本当に効果あるの？」顧客</option>
+              <option value="custom">実商談トレース（↓ログ貼付）</option>
+            </select>
+          </div>
+          <div><label>難易度</label>
+            <select id="difficulty">
+              <option value="easy">易（乗りやすい顧客）</option>
+              <option value="medium" selected>中（普通の顧客）</option>
+              <option value="hard">難（頑固な顧客）</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div><label>克服すべき弱点</label>
+            <select id="weakPoint" onchange="updateHint()">
+              <option value="anchoring">アンカリング（価格提示）</option>
+              <option value="authority">権威性（選ぶ側スタンス）</option>
+              <option value="loss_aversion">損失回避（現状リスク指摘）</option>
+              <option value="reframing">リフレーミング（スクール→研修）</option>
+              <option value="closing">クロージング（言い切り誘導）</option>
+              <option value="hearing">ヒアリング（課題の深堀り）</option>
+              <option value="rapport">ラポール（信頼構築）</option>
+              <option value="objection">反論処理（切り返し力）</option>
+              <option value="tempo">テンポ（会話のリズム）</option>
+              <option value="proposal">提案力（解決策の具体性）</option>
+            </select>
+          </div>
+          <div><label>シナリオ</label>
+            <select id="scenario">
+              <option value="full">フル商談（自由会話）</option>
+              <option value="opening">冒頭5分（アイスブレイク→ヒアリング）</option>
+              <option value="price_objection">価格提示後の切り返し</option>
+              <option value="closing_3min">クロージング最後の3分</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="customPersonaBox" style="display:none">
+          <label>失注商談ログを貼り付け</label>
+          <textarea id="customTranscript" placeholder="商談の議事録、文字起こし、またはGAS FBツールの総評を貼り付けてください"></textarea>
+        </div>
+
+        <!-- Hint box -->
+        <div class="hint-box" style="background:rgba(19,127,236,.04);border-left:3px solid #137fec;border-radius:0 8px 8px 0;padding:12px 14px">
+          <div style="font-size:11px;color:#137fec;font-weight:700;margin-bottom:4px">今回の練習ポイント</div>
+          <div style="font-size:12px;color:#5f6368;line-height:1.6" id="hintText"></div>
+        </div>
+
+        <!-- Advanced: API / Model -->
+        <details class="lobby-accordion">
+          <summary>API設定</summary>
+          <div class="accordion-body config-form">
+            <div><label>Gemini API Key</label><input type="password" id="apiKey" placeholder="AIzaSy..."></div>
+            <div><label>モデル</label>
+              <select id="modelName">
+                <option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio（約44円/10分）</option>
+              </select>
+            </div>
+            <div><label><input type="checkbox" id="saveKey" style="width:auto;margin-right:6px">API Keyを保存する</label></div>
+          </div>
+        </details>
+
+        <!-- GAS Integration -->
+        <details class="lobby-accordion">
+          <summary>GAS商談FB連携</summary>
+          <div class="accordion-body config-form">
+            <div><label>GAS Web App URL</label><input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/..." style="font-size:12px"></div>
+            <button onclick="fetchLossData()" style="background:rgba(19,127,236,.08);border:1px solid rgba(19,127,236,.2);color:#137fec;padding:8px 12px;font-size:12px;width:100%;border-radius:8px;cursor:pointer;font-family:inherit">失注データ取得</button>
+            <select id="lossSelect" style="display:none;width:100%;background:#fff;border:1px solid #dadce0;color:#202124;border-radius:8px;padding:10px;font-size:12px"></select>
+          </div>
+        </details>
+      </div>
+
+      <button class="btn-join" id="btnJoin" onclick="joinMeeting()" style="margin-top:16px">ミーティングに参加</button>
+    </div>
   </div>
 
   <!-- History Section (hidden by default) -->
@@ -1008,116 +1079,14 @@ body {
 
 <!-- Mobile FAB -->
 <div class="fixed bottom-6 right-6 lg:hidden z-50">
-  <button onclick="openSettingsAndStart()" class="flex items-center justify-center w-14 h-14 rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-colors">
+  <button onclick="scrollToConfig()" class="flex items-center justify-center w-14 h-14 rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-colors">
     <span class="material-symbols-outlined text-2xl">add</span>
   </button>
 </div>
 
 </div>
 
-<!-- Hidden form inputs (used by startSession) -->
-<div style="display:none">
-  <input type="text" id="salesName" value="">
-  <select id="product"><option value="ISAI">ISAI</option><option value="Adoafi">Adoafi</option></select>
-  <select id="persona">
-    <option value="price">price</option><option value="compare">compare</option>
-    <option value="busy">busy</option><option value="spouse">spouse</option>
-    <option value="doubt">doubt</option><option value="custom">custom</option>
-  </select>
-  <select id="difficulty"><option value="easy">easy</option><option value="medium" selected>medium</option><option value="hard">hard</option></select>
-  <select id="weakPoint">
-    <option value="anchoring">anchoring</option><option value="authority">authority</option>
-    <option value="loss_aversion">loss_aversion</option><option value="reframing">reframing</option>
-    <option value="closing">closing</option><option value="hearing">hearing</option>
-    <option value="rapport">rapport</option><option value="objection">objection</option>
-    <option value="tempo">tempo</option><option value="proposal">proposal</option>
-  </select>
-  <select id="scenario">
-    <option value="full">full</option><option value="opening">opening</option>
-    <option value="price_objection">price_objection</option><option value="closing_3min">closing_3min</option>
-  </select>
-  <input type="password" id="apiKey" value="">
-  <select id="modelName"><option value="gemini-2.5-flash-native-audio-preview-12-2025">gemini-2.5-flash-native-audio</option></select>
-  <input type="checkbox" id="saveKey">
-  <textarea id="customTranscript"></textarea>
-  <div id="customPersonaBox"></div>
-  <div id="hintText"></div>
-  <input type="text" id="gasUrl" value="">
-  <select id="lossSelect"></select>
-</div>
-
-<!-- Settings Modal -->
-<div class="settings-overlay" id="settingsOverlay">
-  <div class="settings-modal">
-    <div class="flex items-center justify-between mb-2">
-      <h3 style="margin:0">セッション設定</h3>
-      <button onclick="closeSettings()" class="p-1 rounded-full hover:bg-slate-100 transition-colors">
-        <span class="material-symbols-outlined text-slate-500">close</span>
-      </button>
-    </div>
-    <div class="config-form">
-      <div class="form-row">
-        <div><label>担当者名</label><input type="text" id="settSalesName" placeholder="例: 高橋"></div>
-        <div><label>商材</label>
-          <select id="settProduct">
-            <option value="ISAI">ISAI（AIマーケタースクール）</option>
-            <option value="Adoafi">Adoafi</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div><label>顧客ペルソナ</label>
-          <select id="settPersona">
-            <option value="price">「高い」と言う顧客</option>
-            <option value="compare">「他と比べたい」顧客</option>
-            <option value="busy">「忙しくて時間がない」顧客</option>
-            <option value="spouse">「配偶者に相談したい」顧客</option>
-            <option value="doubt">「本当に効果あるの？」顧客</option>
-          </select>
-        </div>
-        <div><label>難易度</label>
-          <select id="settDifficulty">
-            <option value="easy">易（乗りやすい顧客）</option>
-            <option value="medium" selected>中（普通の顧客）</option>
-            <option value="hard">難（頑固な顧客）</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div><label>弱点</label>
-          <select id="settWeakPoint">
-            <option value="anchoring">アンカリング</option>
-            <option value="authority">権威性</option>
-            <option value="loss_aversion">損失回避</option>
-            <option value="reframing">リフレーミング</option>
-            <option value="closing">クロージング</option>
-            <option value="hearing">ヒアリング</option>
-            <option value="rapport">ラポール</option>
-            <option value="objection">反論処理</option>
-            <option value="tempo">テンポ</option>
-            <option value="proposal">提案力</option>
-          </select>
-        </div>
-        <div><label>シナリオ</label>
-          <select id="settScenario">
-            <option value="full">フル商談</option>
-            <option value="opening">冒頭5分</option>
-            <option value="price_objection">価格切り返し</option>
-            <option value="closing_3min">CL 3分</option>
-          </select>
-        </div>
-      </div>
-      <details class="lobby-accordion">
-        <summary>API設定</summary>
-        <div class="accordion-body config-form">
-          <div><label>Gemini API Key</label><input type="password" id="settApiKey" placeholder="AIzaSy..."></div>
-          <div><label><input type="checkbox" id="settSaveKey" style="width:auto;margin-right:6px">API Keyを保存する</label></div>
-        </div>
-      </details>
-    </div>
-    <button class="btn-join" onclick="startFromSettings()">セッションを開始</button>
-  </div>
-</div>
+<!-- (Settings are now in the config panel above) -->
 
 </div>
 
@@ -1495,7 +1464,7 @@ function renderScenarioCards(){
   const grid=document.getElementById('scenarioGrid');
   if(!grid)return;
   grid.innerHTML=SCENARIO_CARDS.map(c=>`
-    <div class="group bg-white rounded-xl overflow-hidden border border-slate-200 hover:shadow-xl hover:border-primary/30 transition-all cursor-pointer" onclick="startScenario('${c.id}')">
+    <div class="group bg-white rounded-xl overflow-hidden border border-slate-200 hover:shadow-xl hover:border-primary/30 transition-all cursor-pointer" data-scenario-card="${c.id}" onclick="startScenario('${c.id}')">
       <div class="relative aspect-video overflow-hidden">
         <div class="absolute inset-0 bg-primary/5 group-hover:bg-transparent transition-colors z-10"></div>
         <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="${c.img}" alt="${c.title}">
@@ -1522,57 +1491,26 @@ function renderScenarioCards(){
 function startScenario(id){
   const card=SCENARIO_CARDS.find(c=>c.id===id);
   if(!card)return;
-  const apiKey=document.getElementById('apiKey').value.trim();
-  if(!apiKey){
-    // Open settings with focus on API key
-    openSettings();
-    setTimeout(()=>{
-      const el=document.getElementById('settApiKey');
-      if(el){el.focus();el.scrollIntoView({behavior:'smooth'})}
-    },300);
-    return;
-  }
-  // Set hidden form values
+  // Pre-fill config panel
   document.getElementById('persona').value=card.persona;
   document.getElementById('difficulty').value=card.difficulty;
   document.getElementById('weakPoint').value=card.weakPoint;
   document.getElementById('scenario').value=card.scenario;
-  joinMeeting();
+  updateHint();
+  onPersonaChange();
+  // Show which preset is selected
+  document.getElementById('presetLabel').textContent='← '+card.title+' プリセット';
+  // Highlight selected card
+  document.querySelectorAll('[data-scenario-card]').forEach(el=>{
+    el.classList.toggle('ring-2',el.dataset.scenarioCard===id);
+    el.classList.toggle('ring-primary',el.dataset.scenarioCard===id);
+  });
+  // Scroll to config panel
+  document.getElementById('configPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function openSettings(){
-  // Sync current values to settings modal
-  document.getElementById('settSalesName').value=document.getElementById('salesName').value;
-  document.getElementById('settProduct').value=document.getElementById('product').value;
-  document.getElementById('settPersona').value=document.getElementById('persona').value;
-  document.getElementById('settDifficulty').value=document.getElementById('difficulty').value;
-  document.getElementById('settWeakPoint').value=document.getElementById('weakPoint').value;
-  document.getElementById('settScenario').value=document.getElementById('scenario').value;
-  document.getElementById('settApiKey').value=document.getElementById('apiKey').value;
-  document.getElementById('settSaveKey').checked=document.getElementById('saveKey').checked;
-  document.getElementById('settingsOverlay').classList.add('show');
-}
-
-function openSettingsAndStart(){
-  openSettings();
-}
-
-function closeSettings(){
-  document.getElementById('settingsOverlay').classList.remove('show');
-}
-
-function startFromSettings(){
-  // Sync settings modal values back to hidden form
-  document.getElementById('salesName').value=document.getElementById('settSalesName').value;
-  document.getElementById('product').value=document.getElementById('settProduct').value;
-  document.getElementById('persona').value=document.getElementById('settPersona').value;
-  document.getElementById('difficulty').value=document.getElementById('settDifficulty').value;
-  document.getElementById('weakPoint').value=document.getElementById('settWeakPoint').value;
-  document.getElementById('scenario').value=document.getElementById('settScenario').value;
-  document.getElementById('apiKey').value=document.getElementById('settApiKey').value;
-  document.getElementById('saveKey').checked=document.getElementById('settSaveKey').checked;
-  closeSettings();
-  joinMeeting();
+function scrollToConfig(){
+  document.getElementById('configPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function showDashSection(section){
@@ -1807,7 +1745,7 @@ function resetSilenceTimer(){
 // === JOIN MEETING ===
 function joinMeeting(){
   const apiKey=document.getElementById('apiKey').value.trim();
-  if(!apiKey){alert('API Keyを入力してください（設定画面から登録）');openSettings();return}
+  if(!apiKey){alert('API Keyを入力してください（設定画面から登録）');scrollToConfig();return}
 
   // Stop lobby mic test if running
   if(lobbyMicStream){
