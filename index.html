@@ -1263,7 +1263,7 @@ body {
         💬
         <span class="ctrl-btn-label">字幕</span>
       </button>
-      <button class="ctrl-btn" id="btnCallGrade" onclick="gradeFromCall()" title="採点" disabled>
+      <button class="ctrl-btn" id="btnCallGrade" onclick="gradeFromCall()" title="採点">
         📊
         <span class="ctrl-btn-label">採点</span>
       </button>
@@ -1780,7 +1780,6 @@ async function startSession(){
   saveApiKey();
   clearMsgs();
   intentionalClose=false;
-  document.getElementById('btnCallGrade').disabled=true;
   setStatus('thinking','接続中...');
 
   const persona=PERSONAS[document.getElementById('persona').value];
@@ -2036,23 +2035,26 @@ function stopRecording(){if(mediaRecorder&&mediaRecorder.state!=='inactive'){med
 
 // === END CALL ===
 function endCall(){
-  stopSession();
   if(conversationLog.length>=2){
-    // Show option to grade
-    document.getElementById('btnCallGrade').disabled=false;
-    setStatus('','通話終了。採点ボタンを押してください');
-    // Also offer to go back
-    setTimeout(()=>{
-      if(document.getElementById('screen-call').classList.contains('active')){
-        // Still on call screen, give them a chance to grade
-      }
-    },500);
+    if(!confirm('採点しますか？\n\n「OK」→ 採点開始\n「キャンセル」→ ロビーに戻る')){
+      stopSession();
+      showScreen('lobby');
+      return;
+    }
+    stopSession();
+    gradeSession();
   }else{
+    stopSession();
     showScreen('lobby');
   }
 }
 
 function gradeFromCall(){
+  if(sessionActive) stopSession();
+  if(conversationLog.length<2){
+    alert('会話が短すぎます。もう少し話してから採点してください。');
+    return;
+  }
   gradeSession();
 }
 
