@@ -1851,7 +1851,9 @@ ${customLog.substring(0,3000)}
               language_code:'ja-JP'
             }
           },
-          system_instruction:{parts:[{text:systemPrompt}]}
+          system_instruction:{parts:[{text:systemPrompt}]},
+          input_audio_transcription:{},
+          output_audio_transcription:{}
         }
       };
       console.log('Setup payload:', JSON.stringify(setupPayload).substring(0,500));
@@ -1883,15 +1885,15 @@ ${customLog.substring(0,3000)}
         if(hasAudio){setStatus('speaking','AI顧客が話しています...');turnHadAudio=true;}
       }
 
-      if(data.serverContent?.outputTranscript?.text){
-        appendTranscript('ai',data.serverContent.outputTranscript.text);
-      }
-      if(data.serverContent?.inputTranscript?.text){
-        appendTranscript('user',data.serverContent.inputTranscript.text);
-        finalizeBubble('user');
-        resetSilenceTimer();
-      }else if(typeof data.serverContent?.inputTranscript==='string'&&data.serverContent.inputTranscript){
-        appendTranscript('user',data.serverContent.inputTranscript);
+      // Output transcription (AI speech → text)
+      const outText=data.serverContent?.outputTranscript?.text||data.serverContent?.outputTranscription?.text;
+      if(outText) appendTranscript('ai',outText);
+
+      // Input transcription (User speech → text)
+      const inText=data.serverContent?.inputTranscript?.text||data.serverContent?.inputTranscription?.text
+        ||(typeof data.serverContent?.inputTranscript==='string'?data.serverContent.inputTranscript:null);
+      if(inText){
+        appendTranscript('user',inText);
         finalizeBubble('user');
         resetSilenceTimer();
       }
