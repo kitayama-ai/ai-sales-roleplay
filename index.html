@@ -1505,7 +1505,7 @@ const SCENARIO_LABELS={full:'フル商談',opening:'冒頭5分',price_objection:
 const SUB_NAMES={authority:'権威性',loss_aversion:'損失回避',reframing:'リフレーミング',anchoring:'アンカー',closing:'クロージング',hearing:'ヒアリング',rapport:'ラポール',objection:'反論処理',tempo:'テンポ',proposal:'提案力'};
 const ALL_SUBS=Object.keys(SUB_NAMES);
 
-let ws=null,audioContext=null,processor=null,mediaStream=null,sessionActive=false;
+let ws=null,audioContext=null,processor=null,mediaStream=null,sessionActive=false,intentionalClose=false;
 let conversationLog=[],timerInterval=null,startTime=null,volumeAnimFrame=null,analyserNode=null;
 let turnCount=0,playbackCtx=null,currentSource=null,silenceTimer=null;
 let mediaRecorder=null,recordedChunks=[];
@@ -1779,6 +1779,7 @@ async function startSession(){
   const apiKey=document.getElementById('apiKey').value.trim();
   saveApiKey();
   clearMsgs();
+  intentionalClose=false;
   document.getElementById('btnCallGrade').disabled=true;
   setStatus('thinking','接続中...');
 
@@ -1918,7 +1919,7 @@ ${customLog.substring(0,3000)}
     };
 
     ws.onerror=(e)=>{console.error('WS Error',e);clearTimeout(connectTimeout);setStatus('','接続エラー');addMsg('system','❌ WebSocket接続エラー');stopSession();showScreen('lobby')};
-    ws.onclose=(e)=>{console.log('WS Close: code='+e.code+' reason='+e.reason);clearTimeout(connectTimeout);if(sessionActive){setStatus('','セッション終了');sessionActive=false}else{setStatus('','接続失敗 (code:'+e.code+')');addMsg('system','❌ code:'+e.code+' — '+e.reason);showScreen('lobby')}};
+    ws.onclose=(e)=>{console.log('WS Close: code='+e.code+' reason='+e.reason);clearTimeout(connectTimeout);if(intentionalClose)return;if(sessionActive){setStatus('','セッション終了');sessionActive=false}else{setStatus('','接続失敗 (code:'+e.code+')');addMsg('system','❌ code:'+e.code+' — '+e.reason);showScreen('lobby')}};
   }catch(err){alert('接続失敗: '+err.message);showScreen('lobby')}
 }
 
@@ -2057,7 +2058,7 @@ function gradeFromCall(){
 
 // === STOP SESSION ===
 function stopSession(){
-  sessionActive=false;clearTimeout(silenceTimer);
+  intentionalClose=true;sessionActive=false;clearTimeout(silenceTimer);
   if(volumeAnimFrame)cancelAnimationFrame(volumeAnimFrame);
   if(processor){processor.disconnect();processor=null}
   if(audioContext){audioContext.close();audioContext=null}
