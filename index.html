@@ -983,7 +983,12 @@ body {
 
       <div class="config-form">
         <div class="form-row">
-          <div><label>担当者名</label><input type="text" id="salesName" placeholder="例: 高橋" oninput="updateLobbyName()"></div>
+          <div><label>担当者名</label>
+            <select id="salesName" onchange="onSalesNameChange()">
+              <option value="">-- 選択してください --</option>
+            </select>
+            <input type="text" id="salesNameCustom" placeholder="名前を直接入力" style="display:none;margin-top:4px" oninput="syncSalesName()">
+          </div>
           <div><label>商材</label>
             <select id="product">
               <option value="ISAI">ISAI（AIマーケタースクール）</option>
@@ -1661,10 +1666,11 @@ function addTeamMember(){
   team.push({name,addedAt:new Date().toISOString()});
   saveTeamData(team);
   renderTeamDashboard();
+  populateSalesNameDropdown();
 }
 function removeTeamMember(idx){
   if(!confirm('このメンバーを削除しますか？'))return;
-  const team=getTeamData();team.splice(idx,1);saveTeamData(team);renderTeamDashboard();
+  const team=getTeamData();team.splice(idx,1);saveTeamData(team);renderTeamDashboard();populateSalesNameDropdown();
 }
 function renderTeamDashboard(){
   const el=document.getElementById('teamTable');
@@ -1722,6 +1728,7 @@ initScoreBars();
 loadApiKey();
 loadHistory();
 renderScenarioCards();
+populateSalesNameDropdown();
 
 function initScoreBars(){
   const el=document.getElementById('scorePreview');
@@ -1740,8 +1747,34 @@ function onPersonaChange(){
   document.getElementById('customPersonaBox').style.display=document.getElementById('persona').value==='custom'?'block':'none';
 }
 
-function updateLobbyName(){
-  // No longer needed in dashboard mode
+function updateLobbyName(){}
+function populateSalesNameDropdown(){
+  const sel=document.getElementById('salesName');
+  const prev=sel.value;
+  const team=getTeamData();
+  // Keep first option + rebuild
+  sel.innerHTML='<option value="">-- 選択してください --</option>';
+  team.forEach(m=>{
+    const o=document.createElement('option');o.value=m.name;o.textContent=m.name;sel.appendChild(o);
+  });
+  const other=document.createElement('option');other.value='__custom__';other.textContent='その他（直接入力）';sel.appendChild(other);
+  // Restore previous selection if still exists
+  if(prev&&[...sel.options].some(o=>o.value===prev))sel.value=prev;
+}
+function onSalesNameChange(){
+  const sel=document.getElementById('salesName');
+  const custom=document.getElementById('salesNameCustom');
+  if(sel.value==='__custom__'){
+    custom.style.display='';custom.focus();
+  } else {
+    custom.style.display='none';custom.value='';
+  }
+}
+function syncSalesName(){}
+function getSalesName(){
+  const sel=document.getElementById('salesName');
+  if(sel.value==='__custom__') return document.getElementById('salesNameCustom').value||'';
+  return sel.value||'';
 }
 
 // === LOBBY MIC TEST ===
@@ -1780,7 +1813,7 @@ function addMsg(role,text){
   if(role==='system'){
     d.innerHTML=`<div class="t-text" style="color:var(--gold);font-size:12px">${text}</div>`;
   }else{
-    const sender=role==='ai'?'顧客（AI）':(document.getElementById('salesName').value||'あなた');
+    const sender=role==='ai'?'顧客（AI）':(getSalesName()||'あなた');
     d.innerHTML=`<div class="t-sender">${role==='ai'?'👤':'🧑‍💼'} ${sender}</div><div class="t-text">${text.replace(/\n/g,'<br>')}</div><div class="t-time">${t}</div>`;
   }
   conversationLog.push({role:role==='ai'?'顧客':'営業',text,time:t,ts:Date.now()});
@@ -1820,7 +1853,7 @@ function getOrCreateLiveBubble(role){
     if(!liveUserBubble){
       const d=document.createElement('div');
       d.className='t-msg t-user';
-      const name=document.getElementById('salesName').value||'あなた';
+      const name=getSalesName()||'あなた';
       const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
       d.innerHTML=`<div class="t-sender">🧑‍💼 ${name}</div><div class="t-text live"></div><div class="t-time">${t}</div>`;
       container.appendChild(d);container.scrollTop=container.scrollHeight;
@@ -1952,7 +1985,7 @@ function joinMeeting(){
   const scenarioKey=document.getElementById('scenario').value;
   document.getElementById('callScenarioBadge').textContent=SCENARIO_LABELS[scenarioKey]||'';
   document.getElementById('aiPersonaLabel').textContent=persona?.jp||'';
-  document.getElementById('pipName').textContent=document.getElementById('salesName').value||'あなた';
+  document.getElementById('pipName').textContent=getSalesName()||'あなた';
 
   showScreen('call');
   startSession();
@@ -1969,7 +2002,7 @@ async function startSession(){
   const persona=PERSONAS[document.getElementById('persona').value];
   const product=document.getElementById('product').value;
   const weakPoint=document.getElementById('weakPoint').value;
-  const salesName=document.getElementById('salesName').value||'営業担当';
+  const salesName=getSalesName()||'営業担当';
   const diff=DIFFICULTY[document.getElementById('difficulty').value];
   const scn=SCENARIOS[document.getElementById('scenario').value];
   const isCustom=document.getElementById('persona').value==='custom';
@@ -2627,7 +2660,7 @@ function saveHistory(r){
   const h=JSON.parse(localStorage.getItem('rp_history')||'[]');
   const subScores={};
   if(r.sub) Object.entries(r.sub).forEach(([k,v])=>subScores[k]=typeof v==='object'?v.score:v);
-  h.unshift({date:new Date().toLocaleDateString('ja-JP'),score:r.total,sub:subScores,wp:document.getElementById('weakPoint').value,name:document.getElementById('salesName').value||'?'});
+  h.unshift({date:new Date().toLocaleDateString('ja-JP'),score:r.total,sub:subScores,wp:document.getElementById('weakPoint').value,name:getSalesName()||'?'});
   if(h.length>50)h.length=50;
   localStorage.setItem('rp_history',JSON.stringify(h));
   loadHistory();
@@ -2671,7 +2704,7 @@ function saveUsage(r){
   const dur=startTime?Math.floor((Date.now()-startTime)/1000):0;
   const subScores={};
   if(r.sub) Object.entries(r.sub).forEach(([k,v])=>subScores[k]=typeof v==='object'?v.score:v);
-  usage.push({name:document.getElementById('salesName').value||'未設定',date:new Date().toISOString(),month:new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit'}),score:r.total,sub:subScores,duration:dur,scenario:document.getElementById('scenario').value,weakPoint:document.getElementById('weakPoint').value});
+  usage.push({name:getSalesName()||'未設定',date:new Date().toISOString(),month:new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit'}),score:r.total,sub:subScores,duration:dur,scenario:document.getElementById('scenario').value,weakPoint:document.getElementById('weakPoint').value});
   localStorage.setItem('rp_usage',JSON.stringify(usage));
 }
 
@@ -2683,7 +2716,7 @@ async function postToGAS(result){
     const subScores={};
     if(result.sub) Object.entries(result.sub).forEach(([k,v])=>subScores[k]=typeof v==='object'?v.score:v);
     await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:document.getElementById('salesName').value||'未設定',date:new Date().toISOString(),score:result.total,sub:subScores,feedback:result.feedback||'',weakPoint:document.getElementById('weakPoint').value,scenario:document.getElementById('scenario').value,duration:startTime?Math.floor((Date.now()-startTime)/1000):0})
+      body:JSON.stringify({name:getSalesName()||'未設定',date:new Date().toISOString(),score:result.total,sub:subScores,feedback:result.feedback||'',weakPoint:document.getElementById('weakPoint').value,scenario:document.getElementById('scenario').value,duration:startTime?Math.floor((Date.now()-startTime)/1000):0})
     });
   }catch(e){console.warn('GAS POSTエラー:',e)}
 }
@@ -2792,7 +2825,7 @@ function exportResultPDF(){
   const dur=startTime?Math.floor((Date.now()-startTime)/1000):0;
   const durStr=Math.floor(dur/60)+'分'+dur%60+'秒';
   const dateStr=new Date().toLocaleDateString('ja-JP');
-  const name=document.getElementById('salesName').value||'未設定';
+  const name=getSalesName()||'未設定';
 
   // Header
   doc.setFontSize(18);doc.text('AI Sales Pro - Session Report',14,20);
@@ -2855,7 +2888,7 @@ function exportResultCSV(){
   const persona=PERSONAS[document.getElementById('persona').value]?.jp||'カスタム';
   const dur=startTime?Math.floor((Date.now()-startTime)/1000):0;
   const dateStr=new Date().toLocaleDateString('ja-JP');
-  const name=document.getElementById('salesName').value||'未設定';
+  const name=getSalesName()||'未設定';
   let csv='\uFEFF';  // BOM for Excel
   csv+='項目,値\n';
   csv+=`日付,${dateStr}\n`;
